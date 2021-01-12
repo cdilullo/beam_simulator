@@ -1,0 +1,31 @@
+##This is a template for the input text file containing station
+##information which can be use to populate a Station object.
+---------------------------
+### Station Information ###
+---------------------------
+NAME    "Test Station"
+ANTS    8
+---------------------------
+### Antenna Information ###
+---------------------------
+NUM     X          Y          Z          Pol          Status
+1      -5.0        0.0        0.0        1            1
+2       5.0        0.0        0.0        1            1
+3       0.0       -5.0        0.0        1            1
+4       0.0        5.0        0.0        1            1
+5      -5.0        0.0        0.0        2            1
+6       5.0        0.0        0.0        2            1
+7       0.0       -5.0        0.0        2            1
+8       0.0        5.0        0.0        2            1
+---------------------------
+### Cable Information ###
+---------------------------
+NUM     Type       Length
+1       LMR200     5.0
+2       LMR200     5.0
+3       LMR200     5.0
+4       LMR200     5.0
+5       LMR200     5.0
+6       LMR200     5.0
+7       LMR200     5.0
+8       LMR200     5.0
