@@ -175,6 +175,9 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
     pwr1 = az*0.0
     pwr2 = az*0.0
 
+    #Convert az and el to radians.
+    az, el = az*np.pi/180.0, el*np.pi/180.0
+
     #Compute the delays across the array for the desired pointing center.
     t = calc_geometric_delays(station=station, freq=freq, azimuth=azimuth, elevation=elevation)
 
@@ -188,7 +191,7 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
     for i in range(az.shape[0]):
         for j in range(az.shape[1]):
             #Get the pixel coordinates.
-            a, e = az[i,j]*np.pi/180, el[i,j]*np.pi/180
+            a, e = az[i,j], el[i,j]
             
             #Convert this to a pointing vector and compute
             #the physical delays across the array.
@@ -214,23 +217,22 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
         coeffs2 = beam['coeffs2']
         
         #Read the coefficients and input them to AIPY to represent the gain pattern.
-        for i, coeffs in enumerate([coeffs1, coeffs2]):
+        for p, coeffs in zip([pwr1, pwr2], [coeffs1, coeffs2]):
             beamShapeDict = {}
-            for i in range(deg+1):
-                beamShapeDict[i] = np.squeeze(coeffs[-1-i,:])
+            for j in range(deg+1):
+                beamShapeDict[j] = np.squeeze(coeffs[-1-j,:])
             
-            antGain = aipy.amp.BeamAlm(np.array([freq/1e3]), lmax=lmax, mmax=lmax, 
+            antGain = aipy.amp.BeamAlm(np.array([freq/1e9]), lmax=lmax, mmax=lmax, 
                                        deg=deg, nside=256, coeffs=beamShapeDict)
             
-            antGain = antGain.response(aipy.coord.azalt2top(np.concatenate([[az.ravel()*np.pi/180], [el.ravel()*np.pi/180]])))
+            antGain = antGain.response(aipy.coord.azalt2top(np.concatenate([[az.ravel()], [el.ravel()]])))
+        
         
             #Multiply the power array by the antenna gain pattern.
             antGain = antGain.reshape(az.shape)
             antGain /= antGain.max()
-            if i == 0:
-                pwr1 *= antGain 
-            else: 
-                pwr2 *= antGain
+            
+            p *= antGain
         
     except:
         print('No antenna gain pattern given. The output power array only accounts for the geometry of the array!')
