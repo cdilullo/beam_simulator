@@ -1,0 +1,8 @@
+# Byte-compiled code
+__pycache__/
+
+# MacOS
+.DS_Store
+
+# Sphinx Documentation
+docs/build/
