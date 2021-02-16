@@ -22,7 +22,8 @@ class AntennaPattern(object):
     for a single frequency from a NEC4 output 
     file.
     
-    Note: The NEC4 file must contain an EXCITATION section.
+    .. note:: 
+     The NEC4 file must contain an EXCITATION section.
     """
     
     def __init__(self, name):
@@ -84,7 +85,8 @@ class AntennaPattern(object):
 def sphfit(az, alt, data, lmax=5, degrees=False, real_only=False):
     """
     Decompose a spherical or semi-spherical data set into spherical harmonics.  
-    Inputs:
+    Inputs
+    ------
       * az: 2-D numpy array of azimuth coordinates in radians or degrees if the 
             `degrees` keyword is set
       * alt: 2-D numpy array of altitude coordinates in radian or degrees if the 
@@ -93,7 +95,8 @@ def sphfit(az, alt, data, lmax=5, degrees=False, real_only=False):
              real, then the `real_only` keyword can be set which speeds up the 
              decomposition
       * lmax: integer setting the maximum order harmonic to fit
-    Keywords:
+    Keywords
+    --------
       * degrees: boolean of whether or not the input azimuth and altitude coordinates
          are in degrees or not
       * real_only: boolean of whether or not the input data is purely real or not.  If
@@ -149,13 +152,15 @@ def sphval(terms, az, alt, degrees=False, real_only=False):
     """
     Evaluate a set of spherical harmonic coefficents at a specified set of
     azimuth and altitude coordinates.
-    Inputs:
+    Inputs
+    ------
       * terms: 1-D complex numpy array, typically from sphfit
       * az: 2-D numpy array of azimuth coordinates in radians or degrees if the 
             `degrees` keyword is set
       * alt: 2-D numpy array of altitude coordinates in radian or degrees if the 
              `degrees` keyword is set
-    Keywords:
+    Keywords
+    --------
       * degrees: boolean of whether or not the input azimuth and altitude coordinates
                  are in degrees or not
       * real_only: boolean of whether or not the input data is purely real or not.  If
@@ -217,11 +222,11 @@ def fit_spherical_harmonics(freq, p1, p2, t1, t2, verbose=False):
 
     Parameters
     ----------
-    freq: NEC simulation frequency in MHz.
-    p1: NEC output file for parallel component of polarization 1.
-    p2: NEC output file for parallel component of polarization 2.
-    t1: NEC output file for transverse component of polarization 1.
-    t2: NEC output file for transverse component of polarization 2.
+     * freq: NEC simulation frequency in MHz.
+     * p1: NEC output file for parallel component of polarization 1.
+     * p2: NEC output file for parallel component of polarization 2.
+     * t1: NEC output file for transverse component of polarization 1.
+     * t2: NEC output file for transverse component of polarization 2.
     
     Returns
     -------
@@ -275,7 +280,7 @@ def combine_harmonic_fits(*args):
 
     Parameters
     ----------
-    *args: Series of .npz files output by fit_spherical_harmonics for different 
+     * args: Series of .npz files output by fit_spherical_harmonics for different 
            frequencies.
         
     Returns

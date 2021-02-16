@@ -12,6 +12,11 @@ __version__ = '1.0'
 __authors__ = ['Chris DiLullo', 'Jayce Dowell']
 
 class Station(object):
+    """
+    Object to store information about an antenna array. Stores:
+     * Station Name
+     * Antenna objects
+    """
 
     def __init__(self, name=None, antennas=None):
 
@@ -39,8 +44,7 @@ class Station(object):
 
 class Antenna(object):
     """
-    Object to store information about individual antennas.
-    Stores:
+    Object to store information about individual antennas. Stores:
      * ID Number
      * Position relative to origin in meters (x,y,z)
      * Polarization (1 or 2)
@@ -66,17 +70,16 @@ class Antenna(object):
 
 class Cable(object):
     """
-    Object to store information about a cable.
-    Stores:
-    * ID Number
-    * Length [m]
-    * Velocity Factor (vf)
-    * Inner conductor radius (a) [m]
-    * Outer conductor radius (b) [m]
-    * Inner conductor conductivity (sigma_a) [S/m]
-    * Outer conductor conductivity (sigma_b) [S/m]
-    * Relative permittity (dielectric constant) (k)
-    * Reference frequency (f0) [Hz]
+    Object to store information about a cable. Stores:
+     * ID Number
+     * Length [m]
+     * Velocity Factor (vf)
+     * Inner conductor radius (a) [m]
+     * Outer conductor radius (b) [m]
+     * Inner conductor conductivity (sigma_a) [S/m]
+     * Outer conductor conductivity (sigma_b) [S/m]
+     * Relative permittity (dielectric constant) (k)
+     * Reference frequency (f0) [Hz]
     """
 
     def __init__(self, id, length, vf, a, b, sigma_a, sigma_b, k, f0):
@@ -115,7 +118,12 @@ class Cable(object):
         return delay
 
 class LMR200(Cable):
-    
+    """
+    Convenience subclass to populate a Cable object for a LMR200 cable. Inputs:
+     * Cable ID
+     * Cable length [m]
+    """    
+
     def __init__(self, id, length):
         self.id = id 
         self.length=length

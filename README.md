@@ -17,6 +17,8 @@ Requirements
 * python >= 3.6
 * aipy == 3.0.1
 * numpy >= 1.19.2
+* scipy >= 1.6.0
+* astropy >= 4.2
 * matplotlib >= 3.3.2
 
 Example
@@ -28,7 +30,7 @@ Below is an example showing how to:
 
 NOTES: 
 * "lwasv-ssmif.txt" can be found [within the LWA Software Library](https://github.com/lwa-project/lsl/tree/master/lsl/data).
-* The NEC4 output files for the LWA dipole can be found [within the LWA Software Library]
+* The NEC4 output files for the LWA dipole can be found [here](http://fornax.phys.unm.edu/lwa/trac/browser/trunk/DipoleResponse)
 
 ### Setting up the Station.
 ```
