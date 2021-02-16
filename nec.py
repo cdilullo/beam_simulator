@@ -270,7 +270,7 @@ def fit_spherical_harmonics(freq, p1, p2, t1, t2, verbose=False):
         print('')
     print('Fit coefficients saved to file: SphericalHarmonicsFit_%.1fMHz.npz' % freq)
 
-    np.savez('SphericalHarmonicsFit_%.1fMHz.npz' % freq, l=12, realOnly=True,
+    np.savez('SphericalHarmonicsFit_%.1fMHz.npz' % freq, freq=freq, l=12, realOnly=True,
              terms1=terms1, terms2=terms2)
 
 def combine_harmonic_fits(*args):
@@ -290,9 +290,10 @@ def combine_harmonic_fits(*args):
 
     freqs, coeffs1, coeffs2 = [], [], []
     for f in args:
-        freqs.append(float(f.split('_')[1].split('.')[0]))
-        coeffs1.append( np.load(f)['terms1'] )
-        coeffs2.append( np.load(f)['terms2'] )  
+        fit = np.load(f)
+        freqs.append( fit['freq'])
+        coeffs1.append( fit['terms1'] )
+        coeffs2.append( fit['terms2'] ) 
 
     freqs = np.array(freqs)
     coeffs1 = np.array(coeffs1)
