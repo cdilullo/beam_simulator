@@ -1,0 +1,5 @@
+Beamforming
+===========
+
+.. automodule:: beamformer
+    :members:

@@ -17,6 +17,12 @@ def generate_uniform_weights(station):
     """
     Return a weighting vector with uniform weights (w = 1.0 for all elements)
     for a given Station object.
+    
+    Inputs:
+     * Station object
+
+    Returns:
+     * Array of size len(station.antennas)
     """
 
     w = np.ones( len(station.antennas) )
@@ -30,6 +36,16 @@ def generate_gaussian_weights(station, freq=60e6, azimuth=0.0, elevation=90.0, f
     and az/el pointing center (deg).
 
     See DiLullo, Taylor, and Dowell (2020) for a description of the method.
+
+    Inputs:
+     * station - Station object
+     * freq - Frequency [Hz]
+     * azimuth - Azimuth Eastward of North [deg]
+     * elevation - Elevation above horizon [deg]
+     * fwhm - FWHM of the main lobe [deg]
+
+    Returns:
+     * Array of size length len(station.antennas)
     """
 
     #Make sure the pointing center is valid.
@@ -76,6 +92,15 @@ def calc_geometric_delays(station, freq=60e6, azimuth=0.0, elevation=90.0):
     """
     Calculate the geometric delays between station elements
     for a given frequency (Hz) and az/el pointing center (deg).
+
+    Inputs:
+     * station - Station object
+     * freq - Frequency [Hz]
+     * azimuth - Azimuth Eastward of North [deg]
+     * elevation - Elevation above horizon [deg]
+
+    Returns:
+     * Delays array of size length len(station.antennas)
     """
 
     #Make sure the pointing center is valid.
@@ -115,6 +140,19 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
     Given a weighting vector and beam_simulator.Station object,
     simulate the beam pattern on the sky for a given frequency
     and pointing.
+
+    Inputs:
+     * station - Station object
+     * w - Weighting array
+     * freq - Frequency [Hz]
+     * azimuth - Azimuth Eastward of North [deg]
+     * elevation - Elevation above horizon [deg]
+     * resolution - Simulation resolution [deg]
+     * antGainFile - Antenna gain file output by nec.combine_harmonic_fits (.npz)
+     * dB - Convert final simulated power to dB
+
+    Returns:
+     * 2-D array of shape (360/resolution X 90/resolution)
     """
 
     #Make sure the pointing center is valid.
