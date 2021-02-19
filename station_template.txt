@@ -7,25 +7,48 @@ NAME    "Test Station"
 ANTS    8
 ---------------------------
 ### Antenna Information ###
+#The following parameters must be defined:
+# ID (Integer)
+# X (Eastern distance from reference [m])
+# Y (Northern distance from reference [m])
+# Z (Upward distance from reference [m])
+# Pol (Polarization, 1 or 2)
+# Status (1 is good, 0 is bad)
 ---------------------------
-NUM     X          Y          Z          Pol          Status
-1      -5.0        0.0        0.0        1            1
-2       5.0        0.0        0.0        1            1
-3       0.0       -5.0        0.0        1            1
-4       0.0        5.0        0.0        1            1
-5      -5.0        0.0        0.0        2            1
-6       5.0        0.0        0.0        2            1
-7       0.0       -5.0        0.0        2            1
-8       0.0        5.0        0.0        2            1
+NUM     ID          X          Y          Z          Pol          Status
+1       1          -5.0        0.0        0.0        1            1
+2       2           5.0        0.0        0.0        1            1
+3       3           0.0       -5.0        0.0        1            1
+4       4           0.0        5.0        0.0        1            1
+5       5          -5.0        0.0        0.0        2            1
+6       6           5.0        0.0        0.0        2            1
+7       7           0.0       -5.0        0.0        2            1
+8       8           0.0        5.0        0.0        2            1
 ---------------------------
 ### Cable Information ###
+#The following parameters must be defined:
+#
+#If TYPE is LMR200/400:
+# ID (String)
+# Length [m]
+#
+#IF TYPE is CUSTOM:
+# ID (String)
+# Length [m]
+# VF (Velocity Factor)
+# A (Inner conductor radius [m])
+# B (Outer conductor radius [m])
+# SIGMA_A (Inner conductor conductivity [S/m])
+# SIGMA_B (Outer conductor conductivity [S/m])
+# K (Dielectric constant)
+# REF_FREQ (Reference Frequency [Hz]
 ---------------------------
-NUM     Type       Length
-1       LMR200     5.0
-2       LMR200     5.0
-3       LMR200     5.0
-4       LMR200     5.0
-5       LMR200     5.0
-6       LMR200     5.0
-7       LMR200     5.0
-8       LMR200     5.0
+NUM     ID         Type       Length
+1       1          LMR200     5.0
+2       2          LMR200     5.0
+3       3          LMR200     5.0
+4       4          LMR200     5.0
+5       5          LMR200     5.0
+6       6          LMR200     5.0
+7       7          LMR200     5.0
+8       8          LMR200     5.0

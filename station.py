@@ -27,12 +27,32 @@ class Station(object):
         else:
             self._antennas = list(antennas)
 
+    def __repr__(self):
+        n = self.__class__.__name__
+        a = [(attr, getattr(self, attr)) for attr in ('name', 'antennas')]
+        
+        if a[1][1] != []:
+            a[1] = ('antennas', ['...'])
+        
+        output = '<%s:' % n
+        first = True
+        for key, value in a:
+            output += '%s %s=%s' % (('' if first else ','), key, value)
+            first = False
+        output += '>'
+        return output
+    
     @property
     def antennas(self):
+        """
+        Return a list of `station.Antenna` objects that the `station.Station` object is comprised of.
+        """
         return self._antennas
     
     def plot_antennas(self):
-        
+        """
+        Plot the locations of the antennas.
+        """
         f, ax = plt.subplots(1,1)
         ax.set_title('%s' % self.name, fontsize='x-large')
         ax.set_xlabel('X [m]', fontsize='large')
@@ -46,15 +66,15 @@ class Antenna(object):
     """
     Object to store information about individual antennas. Stores:
      * ID Number
-     * Position relative to origin in meters (x,y,z)
+     * Position relative to origin in meters (x(East), y(North), z(Up))
      * Polarization (1 or 2)
      * Status (1 is good, 0 is bad)
     """
 
     def __init__(self, id, x, y, z, status=1, pol=1, cable=None):
         self.id = int(id)
-        self.pol = pol
-        self.status = status
+        self.pol = int(pol)
+        self.status = int(status)
         self.x = x
         self.y = y
         self.z = z
@@ -64,8 +84,23 @@ class Antenna(object):
         else:
             self._cable = cable
 
+    def __repr__(self):
+        n = self.__class__.__name__
+        a = [(attr, getattr(self, attr)) for attr in ('id', 'pol', 'status', 'x', 'y', 'z', 'cable')]
+        
+        output = '<%s:' % n
+        first = True
+        for key, value in a:
+            output += '%s %s=%s' % (('' if first else ','), key, value)
+            first = False
+        output += '>'
+        return output
+        
     @property
     def cable(self):
+        """
+        Return the `station.Cable` object associated with this antenna.
+        """
         return self._cable
 
 class Cable(object):
@@ -80,6 +115,9 @@ class Cable(object):
      * Outer conductor conductivity (sigma_b) [S/m]
      * Relative permittity (dielectric constant) (k)
      * Reference frequency (f0) [Hz]
+
+    .. note::
+     Attenuation and delay methods are described in LWA Memo #187.
     """
 
     def __init__(self, id, length, vf, a, b, sigma_a, sigma_b, k, f0):
@@ -93,7 +131,29 @@ class Cable(object):
         self.k = k
         self.f0 = f0
     
+    def __repr__(self):
+        n = self.__class__.__name__
+        a = [(attr, getattr(self, attr)) for attr in ('id', 'length', 'vf', 'a', 'b', 'sigma_a', 'sigma_b', 'k', 'f0')]
+        
+        output = '<%s:' % n
+        first = True
+        for key, value in a:
+            output += '%s %s=%s' % (('' if first else ','), key, value)
+            first = False
+        output += '>'
+        return output
+    
     def attenuation(self, frequency, dB=False):
+        """
+        Compute the signal attenuation due to cable loss.
+        
+        Inputs:
+         * frequency - Frequency in Hz.
+         * dB - Return the cable attenuation in dB.
+
+        Returns:
+         * Cable attenuation.
+        """ 
         a0 = ( np.sqrt(np.pi*self.k*eps0.value / 4.0) * ((self.sigma_a**(-0.5) / self.a) + (self.sigma_b**(-0.5) / self.b))
              * (np.log(self.b/self.a))**(-1) * self.f0**(0.5) )
         
@@ -104,7 +164,15 @@ class Cable(object):
         return att
 
     def delay(self, frequency):
+        """
+        Compute the signal delay, both bulk and dispersive terms, induced by the cable.
 
+        Inputs:
+         * frequency - Frequency in Hz.
+
+        Returns:
+         * Cable delay in seconds. 
+        """
         #Bulk delay term.
         bulk = self.length / (self.vf * c.value)
 
@@ -160,188 +228,157 @@ def loadStation(arg):
     Load in a template file (.txt) which contains information
     about the station. See the README and station_template.txt
     files for more information.
-    """
 
-    f = open(arg,'r')
-    lines = f.readlines()
+    Inputs:
+     * arg - Station template file (.txt)
 
-    #Find the station name and number of antennas.
-    name = lines[5].split('"')[1]
-    numAnts = int(lines[6].split(' ')[-1])
+    Returns:
+     * `station.Station` object
+    """ 
+    f = open(arg, 'r')
+    while True:
+        line = f.readline()
+        
+        #Check to see if we're at the end of the file.
+        if line == '':
+            break
 
-    #Get the antenna data.
-    antID, x, y, z, pol, stat = [], [], [], [], [], []
-    for l in lines[11:11+numAnts]:
-            #Quickly clean up the lines.
-            l = l.split(' ')
+        #Read the Station Information section.
+        if re.match('^###', line) and re.search('Station', line):
+            print('Reading Station Information')
+            continue
+
+        if re.match('^NAME', line):
+            name = line.split('"')[1]
+            continue
+        elif re.match('^ANTS', line):
+            numAnts = int(line.split(' ')[-1])
+            print("Number of antennas is %i" % numAnts)
+            continue
+
+        #Read the Antenna Information section.
+        if re.match('^###', line) and re.search('Antenna', line):
+            antSection = True
+            antID, antX, antY, antZ, antPol, antStat = [], [], [], [], [], []
+            print('Reading Antenna Information')
+            continue
+        
+        if re.match('^1', line) and antSection:
+            #We've found the first line with antenna data.
+            l = line.split(' ')
             while '' in l:
                 l.remove('')
-            antID.append(int(l[0]))
-            x.append(float(l[1]))
-            y.append(float(l[2]))
-            z.append(float(l[3]))
-            pol.append(int(l[4]))
-            stat.append(int(l[5]))
+            for param, value in zip([antID, antX, antY, antZ, antPol, antStat], l[1:]):
+                param.append( float(value) )
+            
+            #Read the rest of the antennas.
+            for i in range(numAnts-1):
+                line = f.readline()
+    
+                l = line.split(' ')
+                while '' in l:
+                    l.remove('')
+                for param, value in zip([antID, antX, antY, antZ, antPol, antStat], l[1:]):
+                    param.append( float(value) )
+            continue
 
-    #Get the cable data (starts at index 11 + numAnts + 4)
-    start = 15 + numAnts
-    cables = []
-    for l in lines[start:start+numAnts]:
-        l = l.split(' ')
-        while '' in l:
-            l.remove('')
-        if l[1] == 'LMR200':
-            cables.append(LMR200(id=int(l[0]),length=float(l[2])))
-        elif l[1] == 'LMR400':
-            cables.append(LMR400(id=int(l[0]),length=float(l[2])))
+        #Read the Cable Information section.
+        if re.match('^###', line) and re.search('Cable', line):
+            cblSection = True
+            antSection = False
+            cables = []
+            print('Reading Cable Information')
+            continue
+
+        if re.match('^1', line) and cblSection:
+            #We've found the first line with cable data. 
+            l = line.split(' ')
+            while '' in l:
+                l.remove('')
+            #Figure out if it is a LMR200/400 or a custom cable.
+            if l[2] == 'LMR200':
+                cables.append( LMR200(id=l[1], length=float(l[3])) )
+            elif l[2] == 'LMR400':
+                cables.append( LMR400(id=l[1], length=float(l[3])) )
+            else:
+                cables.append( Cable(id=l[1], length=float(l[3]), vf=float(l[4]), a=float(l[5]), b=float(l[6]), 
+                                    sigma_a=float(l[7]), sigma_b=float(l[8]), k=float(l[9]), f0=float(l[10])) )
+            #Read the rest of the cable lines.
+            for i in range(numAnts-1):
+                line = f.readline()
+
+                l = line.split(' ')
+                while '' in l:
+                    l.remove('')
+                #Figure out if it is a LMR200/400 or a custom cable.
+                if l[2] == 'LMR200':
+                    cables.append( LMR200(id=l[1], length=float(l[3])) )
+                elif l[2] == 'LMR400':
+                    cables.append( LMR400(id=l[1], length=float(l[3])) )
+                else:
+                    cables.append( Cable(id=l[1], length=float(l[3]), vf=float(l[4]), a=float(l[5]), b=float(l[6]), 
+                                        sigma_a=float(l[7]), sigma_b=float(l[8]), k=float(l[9]), f0=float(l[10])) )
+            continue
 
     #Put it all together.
     antennas = []
     for i in range(numAnts):
-        antennas.append(Antenna(id=antID[i], x=x[i], y=y[i], z=z[i],
-                                pol=pol[i],cable=cables[i]))
+        antennas.append(Antenna(id=antID[i], x=antX[i], y=antY[i], z=antZ[i],
+                                status=antStat[i], pol=antPol[i], cable=cables[i]))
 
     station = Station(name=name,antennas=antennas)
     return station
 
-def loadLWA(arg):
-    """
-    Load in an LWA SSMIF (.txt) file and generate the equivalent
-    station object.
-    """
-    #Read in and parse the SSMIF (see lsl.common.stations.py)
-    kwdRE = re.compile(r'(?P<keyword>[A-Z_0-9]+)(\[(?P<id1>[0-9]+?)\])?(\[(?P<id2>[0-9]+?)\])?(\[(?P<id3>[0-9]+?)\])?')
-    
-    # Loop over the lines in the file
-    with open(arg, 'r') as fh:
-        for line in fh:
-            line = line.replace('\n', '')
-            line = line.replace('\r', '')
-            if len(line) == 0 or line.isspace():
-                continue
-            if line[0] == '#':
-                continue
-                
-            keywordSection, value = line.split(None, 1)
-            value = value.split('#', 1)[0]
-            
-            mtch = kwdRE.match(keywordSection)
-            keyword = mtch.group('keyword')
-            
-            ids = [-1, -1, -1]
-            for i in range(3):
-                try:
-                    ids[i] = int(mtch.group('id%i' % (i+1)))
-                except TypeError:
-                    pass
-            
-            # Station Name
-            if keyword == 'STATION_ID':
-                idn = str(value)
-                continue
-            
-            # Stand & Antenna Data
-            if keyword == 'N_STD':
-                nStand = int(value)
-                
-                stdPos = [[0.0, 0.0, 0.0] for n in range(nStand)]
-                stdAnt = [n//2+1 for n in range(2*nStand)]
-                stdStat = [3 for n in range(2*nStand)]     
-                continue
-                
-            if keyword == 'STD_LX':
-                stdPos[ids[0]-1][0] = float(value)
-                continue
-            if keyword == 'STD_LY':
-                stdPos[ids[0]-1][1] = float(value)
-                continue
-            if keyword == 'STD_LZ':
-                stdPos[ids[0]-1][2] = float(value)
-                continue
-                
-            if keyword == 'ANT_STD':
-                stdAnt[ids[0]-1] = int(value)
-                continue
-            if keyword == 'ANT_STAT':
-                stdStat[ids[0]-1] = int(value)
-                continue
-                
-            # FEE, Cable, & SEP Data
-            
-            if keyword == 'N_FEE':
-                nFee = int(value)
-                
-                feeID = ["UNK" for n in range(nFee)]
-                feeStat = [3 for n in range(nFee)]
-                feeDesi = [1 for n in range(nFee)]
-                feeAnt1 = [2*n+1 for n in range(nFee)]
-                feeAnt2 = [2*n+2 for n in range(nFee)]
-                
-                continue
-                
-            if keyword == 'FEE_ID':
-                feeID[ids[0]-1] = value
-                continue
-                
-            if keyword == 'FEE_STAT':
-                feeStat[ids[0]-1] = int(value)
-                continue
-                
-            if keyword == 'FEE_DESI':
-                feeDesi[ids[0]-1] = int(value)
-                continue
-                
-            if keyword == 'FEE_ANT1':
-                feeAnt1[ids[0]-1] = int(value)
-                continue
-            if keyword == 'FEE_ANT2':
-                feeAnt2[ids[0]-1] = int(value)
-                continue
-                
-                
-            if keyword == 'N_RPD':
-                nRPD = int(value)
-                
-                rpdID = ['UNK' for n in range(nRPD)]
-                rpdStat = [3 for n in range(nRPD)]
-                rpdLeng = [0.0 for n in range(nRPD)]
-                rpdStr = [1.0 for n in range(nRPD)]
-                rpdAnt = [n+1 for n in range(nRPD)]
-                
-                continue
-                
-            if keyword == 'RPD_ID':
-                rpdID[ids[0]-1] = value
-                continue
-                
-            if keyword == 'RPD_STAT':
-                rpdStat[ids[0]-1] = int(value)
-                continue
-                
-            if keyword == 'RPD_LENG':
-                rpdLeng[ids[0]-1] = float(value)
-                continue
-                
-            if keyword == 'RPD_STR':
-                if ids[0] == -1:
-                    rpdStr = [float(value) for n in range(nRPD)]
-                else:
-                    rpdStr[ids[0]-1] = float(value)
-                continue
-                
-            if keyword == 'RPD_ANT':
-                rpdAnt[ids[0]-1] = int(value)
-                continue
+try:
+    from lsl.common.stations import parse_ssmif
 
-    status = np.ones(2*nStand)
-    for i in range(2*nStand):
-        if feeStat[i//2] != 3 or stdStat[i] != 3:
-            status[i] = 0
+    def loadLWA(ssmif):
+        """
+        Read in a LWA SSMIF file and return a fully populated `station.Station` object.
+        
+        Inputs:
+         * ssmif - LWA SSMIF file (.txt)
+
+        Returns:
+         * `station.Station` object.
+        
+        .. note:: This function requires the LWA Software Library (LSL)
+        """
+        site = parse_ssmif(ssmif)
+
+        antennas = []
+        for ant in site.antennas:
+            #Antenna information.
+            antID   = ant.id
+            antPol  = ant.pol + 1
+            antStat = 1 if ant.combined_status == 33 else 0
+            antX, antY, antZ = ant.stand.x, ants.stand.y, ant.stand.z
             
-    antennas = []
-    for i in range(2*nStand):
-        antennas.append( Antenna(id=i, x=stdPos[i//2][0], y=stdPos[i//2][1], z=stdPos[i//2][2], status=status[i], pol=i%2+1, 
-                                cable=LMR200(id=rpdID[i], length=rpdLeng[i]*rpdStr[i])) )
-    
-    station = Station(name='LWA-'+idn, antennas=antennas)
-    return station
+            #Cable information.
+            cblID   = ant.cable.id
+            cblLen  = ant.cable.length * ant.cable.stretch
+
+            antennas.append( Antenna(id=antID, x=antX, y=antY, z=antZ, status=antStat, pol=antPol, 
+                            cable=LMR200(id=cblID[i], length=cblLen)) )
+
+        station = Station(name=site.name, antennas=antennas)
+
+except ImportError:
+    import warnings
+    warnings.simplefilter('always', ImportWarning)
+    warnings.warn('Cannot import lsl, loading from a LWA SSMIF file disabled', ImportWarning)
+
+    def loadLWA(ssmif):
+        """
+        Read in a LWA SSMIF file and return a fully populated `station.Station` object.
+        
+        Inputs:
+         * ssmif - LWA SSMIF file (.txt)
+
+        Returns:
+         * `station.Station` object.
+        
+        .. note:: This function requires the LWA Software Library (LSL)
+        """
+        raise RuntimeError('Not supported without lsl')
+
