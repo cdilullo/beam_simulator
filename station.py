@@ -352,16 +352,18 @@ try:
             antID   = ant.id
             antPol  = ant.pol + 1
             antStat = 1 if ant.combined_status == 33 else 0
-            antX, antY, antZ = ant.stand.x, ants.stand.y, ant.stand.z
+            antX, antY, antZ = ant.stand.x, ant.stand.y, ant.stand.z
             
             #Cable information.
             cblID   = ant.cable.id
             cblLen  = ant.cable.length * ant.cable.stretch
 
             antennas.append( Antenna(id=antID, x=antX, y=antY, z=antZ, status=antStat, pol=antPol, 
-                            cable=LMR200(id=cblID[i], length=cblLen)) )
+                            cable=LMR200(id=cblID, length=cblLen)) )
 
         station = Station(name=site.name, antennas=antennas)
+
+        return station
 
 except ImportError:
     import warnings
