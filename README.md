@@ -20,6 +20,8 @@ Requirements
 * scipy >= 1.6.0
 * astropy >= 4.2
 * matplotlib >= 3.3.2
+* numba >= 0.51.2
+* lsl >= 2.0.2 (for LWA SSMIF compatability)
 
 Example
 -------

@@ -8,13 +8,12 @@ import aipy
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 from scipy.special import sph_harm
 
 
 __version__ = '1.0'
 __authors_ = ['Chris DiLullo', 'Jayce Dowell']
-__all__ = ['AntennaPattern']
+__all__ = ['AntennaPattern', 'sphfit', 'sphval', 'fit_spherical_harmonics', 'combine_harmonic_fits']
 
 class AntennaPattern(object):
     """
@@ -84,35 +83,26 @@ class AntennaPattern(object):
 
 def sphfit(az, alt, data, lmax=5, degrees=False, real_only=False):
     """
-    Decompose a spherical or semi-spherical data set into spherical harmonics.  
-    Inputs
-    ------
-      * az: 2-D numpy array of azimuth coordinates in radians or degrees if the 
-            `degrees` keyword is set
-      * alt: 2-D numpy array of altitude coordinates in radian or degrees if the 
-             `degrees` keyword is set
-      * data: 2-D numpy array of the data to be fit.  If the data array is purely
-             real, then the `real_only` keyword can be set which speeds up the 
-             decomposition
-      * lmax: integer setting the maximum order harmonic to fit
-    Keywords
-    --------
-      * degrees: boolean of whether or not the input azimuth and altitude coordinates
-         are in degrees or not
-      * real_only: boolean of whether or not the input data is purely real or not.  If
-        the data are real, only coefficients for modes >=0 are computed.
-    Returned is a 1-D complex numpy array with the spherical harmonic coefficients 
-    packed packed in order of increasing harmonic order and increasing mode, i.e.,
-    (0,0), (1,-1), (1,0), (1,1), (2,-2), etc.  If the `real_only` keyword has been 
-    set, the negative coefficients for the negative modes are excluded from the 
-    output array.
-    
+    Decompose a spherical or semi-spherical data set into spherical harmonics.
+
+    Parameters:
+     * az: 2-D numpy array of azimuth coordinates in radians or degrees if the `degrees` keyword is set
+     * alt: 2-D numpy array of altitude coordinates in radians or degrees if the `degrees` keyword is set
+     * data: 2-D numpy array of the data to be fit
+     * lmax: integer setting the maximum order harmonic to fit
+     * degrees: boolean of whether or not the input azimuth and altitude coordinates are in degrees
+     * real_only: boolean of whether or not the input data is purely real. If the data are real, only coefficients for modes >= 0 are computed
+
+    Returns:
+     * 1-D complex numpy array with the spherical harmonic coefficients packed in order of increasing harmonic order, i.e. (0,0), (1,-1), (1,0), (1,1), etc.
+       If `real_only` is True, the negative coefficients are excluded from the output array.
+ 
     .. note::
-        sphfit was designed to fit the LWA dipole response pattern as a function of
-        azimuth and elevation.  Elevation angles are mapped to theta angles by adding
-        pi/2 so that an elevation of 90 degrees corresponds to a theta of 180 degrees.
-        To fit in terms of spherical coordianates, subtract pi/2 from the theta values
-        before running.
+     sphfit was designed to fit the LWA dipole response pattern as a function of
+     azimuth and elevation.  Elevation angles are mapped to theta angles by adding
+     pi/2 so that an elevation of 90 degrees corresponds to a theta of 180 degrees.
+     To fit in terms of spherical coordianates, subtract pi/2 from the theta values
+     before running.
     """
     
     if degrees:
@@ -150,30 +140,24 @@ def sphfit(az, alt, data, lmax=5, degrees=False, real_only=False):
 
 def sphval(terms, az, alt, degrees=False, real_only=False):
     """
-    Evaluate a set of spherical harmonic coefficents at a specified set of
-    azimuth and altitude coordinates.
-    Inputs
-    ------
-      * terms: 1-D complex numpy array, typically from sphfit
-      * az: 2-D numpy array of azimuth coordinates in radians or degrees if the 
-            `degrees` keyword is set
-      * alt: 2-D numpy array of altitude coordinates in radian or degrees if the 
-             `degrees` keyword is set
-    Keywords
-    --------
-      * degrees: boolean of whether or not the input azimuth and altitude coordinates
-                 are in degrees or not
-      * real_only: boolean of whether or not the input data is purely real or not.  If
-                  the data are real, only coefficients for modes >=0 are computed.
-    Returns a 2-D numpy array of the harmoics evalated and summed at the given 
-    coordinates.
+    Evaluate a set of spherical harmonic coefficents at a specified set of azimuth and altitude coordinates.
+
+    Parameters:
+     * terms: 1-D complex numpy array, typically from sphfit
+     * az: 2-D numpy array of azimuth coordinates in radians or degrees if the `degrees` keyword is set
+     * alt: 2-D numpy array of altitude coordinates in radian or degrees if the `degrees` keyword is set
+     * degrees: boolean of whether or not the input azimuth and altitude coordinates are in degrees or not
+     * real_only: boolean of whether or not the input data is purely real or not.  If the data are real, only coefficients for modes >= 0 are computed.
+
+    Returns:
+     * 2-D numpy array of the harmoics evalated and summed at the given coordinates.
     
     .. note::
-        sphfit was designed to fit the LWA dipole response pattern as a function of
-        azimuth and elevation.  Elevation angles are mapped to theta angles by adding
-        pi/2 so that an elevation of 90 degrees corresponds to a theta of 180 degrees.
-        To spherical harmonics in terms of spherical coordianates, subtract pi/2 from 
-        the theta values before running.
+     sphval was designed to evaluate fits of the LWA dipole response pattern as a
+     function of azimuth and elevation. Elevation angles are mapped to theta angles
+     by adding pi/2 so that an elevation of 90 degrees corresponds to a theta of 180
+     degrees. To spherical harmonics in terms of spherical coordianates, subtract pi/2 from 
+     the theta values before running.
     """
     
     if degrees:
@@ -220,18 +204,15 @@ def fit_spherical_harmonics(freq, p1, p2, t1, t2, verbose=False):
     antenna at a single frequency in terms of spherical 
     harmonics.
 
-    Parameters
-    ----------
+    Parameters:
      * freq: NEC simulation frequency in MHz.
      * p1: NEC output file for parallel component of polarization 1.
      * p2: NEC output file for parallel component of polarization 2.
      * t1: NEC output file for transverse component of polarization 1.
      * t2: NEC output file for transverse component of polarization 2.
     
-    Returns
-    -------
-    A .npz file containing the terms of the spherical harmonic fit for each 
-    polarization.
+    Returns:
+     * A .npz file containing the terms of the spherical harmonic fit for each polarization.
     """
     
     #Compute the full pattern (parallel + transverse) for each polarization.
@@ -270,7 +251,7 @@ def fit_spherical_harmonics(freq, p1, p2, t1, t2, verbose=False):
         print('')
     print('Fit coefficients saved to file: SphericalHarmonicsFit_%.1fMHz.npz' % freq)
 
-    np.savez('SphericalHarmonicsFit_%.1fMHz.npz' % freq, l=12, realOnly=True,
+    np.savez('SphericalHarmonicsFit_%.1fMHz.npz' % freq, freq=freq, l=12, realOnly=True,
              terms1=terms1, terms2=terms2)
 
 def combine_harmonic_fits(*args):
@@ -278,21 +259,20 @@ def combine_harmonic_fits(*args):
     Takes in spherical harmonic fits output by fit_spherical_harmonics and 
     represents them as a polynomial in frequency. Returns the fit coefficients
 
-    Parameters
-    ----------
+    Parameters:
      * args: Series of .npz files output by fit_spherical_harmonics for different 
            frequencies.
         
-    Returns
-    -------
-    A .npz file containing all input spherical harmonic fit terms.
+    Returns:
+     * A .npz file containing all input spherical harmonic fit terms.
     """
 
     freqs, coeffs1, coeffs2 = [], [], []
     for f in args:
-        freqs.append(float(f.split('_')[1].split('.')[0]))
-        coeffs1.append( np.load(f)['terms1'] )
-        coeffs2.append( np.load(f)['terms2'] )  
+        fit = np.load(f)
+        freqs.append( fit['freq'])
+        coeffs1.append( fit['terms1'] )
+        coeffs2.append( fit['terms2'] ) 
 
     freqs = np.array(freqs)
     coeffs1 = np.array(coeffs1)

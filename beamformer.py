@@ -6,7 +6,10 @@ import sys
 import aipy
 import numpy as np
 
+from numba import jit
 from astropy.constants import c
+
+import time
 
 __version__ = '1.0'
 __authors__ = ['Chris DiLullo', 'Jayce Dowell']
@@ -135,6 +138,31 @@ def calc_geometric_delays(station, freq=60e6, azimuth=0.0, elevation=90.0):
 
     return delays
 
+@jit(nopython=True)
+def _computeBeamformedSignal(freq, az, el, xyz, cbl, t, w, att, pol1, pol2, vLight):
+
+    pwr1 = az*0.0
+    pwr2 = az*0.0
+
+    for i in range(az.shape[0]):
+        for j in range(az.shape[1]):
+            #Get the pixel coordinates.
+            a, e = az[i,j], el[i,j]
+            
+            #Convert this to a pointing vector and compute
+            #the physical delays across the array.
+            k = np.array([np.cos(e)*np.sin(a),np.cos(e)*np.cos(a), np.sin(e)])
+            t_p = cbl - np.dot(k, xyz) / vLight
+
+            #Calculate the beamformed signal in this direction.
+            sig = w*np.exp(-2j*np.pi*freq*(t_p - t)) / att
+
+            #Sum and square the results.
+            pwr1[i,j] = np.abs( np.sum(sig[pol1]) )**2
+            pwr2[i,j] = np.abs( np.sum(sig[pol2]) )**2
+
+    return pwr1, pwr2
+
 def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0, antGainFile=None, dB=False):
     """
     Given a weighting vector and beam_simulator.Station object,
@@ -172,8 +200,9 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
     az = np.arange(0,360*ires+1,1) / ires
     el = np.arange(0,90*ires+1,1) / ires
     el, az = np.meshgrid(el,az)
-    pwr1 = az*0.0
-    pwr2 = az*0.0
+
+    #Convert az and el to radians.
+    az, el = az*np.pi/180.0, el*np.pi/180.0
 
     #Compute the delays across the array for the desired pointing center.
     t = calc_geometric_delays(station=station, freq=freq, azimuth=azimuth, elevation=elevation)
@@ -183,24 +212,13 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
     pol2 = [i for i,a in enumerate(station.antennas) if a.status == 1 and a.pol == 2]
     w[[i for i, a in enumerate(station.antennas) if a.status == 0]] = 0.0
 
+    pol1 = np.array(pol1)
+    pol2 = np.array(pol2)
+
     #Beamform.
     print('Simulating beam pattern for a pointing at %.2f deg azimuth, %.2f deg elevation at %.2f MHz' % (azimuth, elevation, freq/1e6))
-    for i in range(az.shape[0]):
-        for j in range(az.shape[1]):
-            #Get the pixel coordinates.
-            a, e = az[i,j]*np.pi/180, el[i,j]*np.pi/180
-            
-            #Convert this to a pointing vector and compute
-            #the physical delays across the array.
-            k = np.array([np.cos(e)*np.sin(a),np.cos(e)*np.cos(a), np.sin(e)])
-            t_p = cbl - np.dot(k, xyz) / c.value
 
-            #Calculate the beamformed signal in this direction.
-            sig = w*np.exp(-2j*np.pi*freq*(t_p - t)) / att
-
-            #Sum and square the results.
-            pwr1[i,j] = np.abs( np.sum(sig[pol1]) )**2
-            pwr2[i,j] = np.abs( np.sum(sig[pol2]) )**2
+    pwr1, pwr2 = _computeBeamformedSignal(freq=freq, az=az, el=el, xyz=xyz, cbl=cbl, t=t, w=w, att=att, pol1=pol1, pol2=pol2, vLight=c.value)
 
     #Multiply by the dipole gain pattern (this assumes pattern multiplication is valid).
     try:
@@ -214,23 +232,22 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
         coeffs2 = beam['coeffs2']
         
         #Read the coefficients and input them to AIPY to represent the gain pattern.
-        for i, coeffs in enumerate([coeffs1, coeffs2]):
+        for p, coeffs in zip([pwr1, pwr2], [coeffs1, coeffs2]):
             beamShapeDict = {}
-            for i in range(deg+1):
-                beamShapeDict[i] = np.squeeze(coeffs[-1-i,:])
+            for j in range(deg+1):
+                beamShapeDict[j] = np.squeeze(coeffs[-1-j,:])
             
-            antGain = aipy.amp.BeamAlm(np.array([freq/1e3]), lmax=lmax, mmax=lmax, 
+            antGain = aipy.amp.BeamAlm(np.array([freq/1e9]), lmax=lmax, mmax=lmax, 
                                        deg=deg, nside=256, coeffs=beamShapeDict)
             
-            antGain = antGain.response(aipy.coord.azalt2top(np.concatenate([[az.ravel()*np.pi/180], [el.ravel()*np.pi/180]])))
+            antGain = antGain.response(aipy.coord.azalt2top(np.concatenate([[az.ravel()], [el.ravel()]])))
+        
         
             #Multiply the power array by the antenna gain pattern.
             antGain = antGain.reshape(az.shape)
             antGain /= antGain.max()
-            if i == 0:
-                pwr1 *= antGain 
-            else: 
-                pwr2 *= antGain
+            
+            p *= antGain
         
     except:
         print('No antenna gain pattern given. The output power array only accounts for the geometry of the array!')
