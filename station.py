@@ -10,6 +10,8 @@ from astropy.constants import c, mu0, eps0
 
 __version__ = '1.0'
 __authors__ = ['Chris DiLullo', 'Jayce Dowell']
+__all__     = ['Station', 'Antenna', 'Cable', 'LMR200', 'LMR400',
+               'loadStation', 'loadLWA']
 
 class Station(object):
     """
