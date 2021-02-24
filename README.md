@@ -30,7 +30,7 @@ Below is an example showing how to:
 1. Represent the gain pattern of a LWA dipole.
 1. Simulate the beam pattern for LWA-SV for a given pointing center and frequency.
 
-NOTES: 
+NOTES:
 * "lwasv-ssmif.txt" can be found [within the LWA Software Library](https://github.com/lwa-project/lsl/tree/master/lsl/data).
 * The NEC4 output files for the LWA dipole can be found [here](http://fornax.phys.unm.edu/lwa/trac/browser/trunk/DipoleResponse)
 
@@ -55,13 +55,15 @@ for f in freqs:
     t1 = 'lwa1_xet_%s.out' % f
     p2 = 'lwa1_yep_%s.out' % f
     t2 = 'lwa1_yet_%s.out' % f
-    
+
     nec.fit_spherical_harmonics(f, p1, p2, t1, t2, verbose=False)
 
 #Now the .npz files containing the spherical harmonic fits can be combined.
-nec.combine_harmonic_fits('SphericalHarmonicsFit_10.0MHz.npz', 'SphericalHarmonicsFit_20.0MHz.npz', 'SphericalHarmonicsFit_30.0MHz.npz',
-                          'SphericalHarmonicsFit_40.0MHz.npz', 'SphericalHarmonicsFit_50.0MHz.npz', 'SphericalHarmonicsFit_60.0MHz.npz',
-                          'SphericalHarmonicsFit_70.0MHz.npz', 'SphericalHarmonicsFit_80.0MHz.npz', 'SphericalHarmonicsFit_88.0MHz.npz')    
+nec.combine_harmonic_fits('SphericalHarmonicsFit_10.0MHz.npz', 'SphericalHarmonicsFit_20.0MHz.npz',
+                          'SphericalHarmonicsFit_30.0MHz.npz', 'SphericalHarmonicsFit_40.0MHz.npz',
+                          'SphericalHarmonicsFit_50.0MHz.npz', 'SphericalHarmonicsFit_60.0MHz.npz',
+                          'SphericalHarmonicsFit_70.0MHz.npz', 'SphericalHarmonicsFit_80.0MHz.npz',
+                          'SphericalHarmonicsFit_88.0MHz.npz')    
 ```
 
 This will create a file named "beam_cofficients.npz" which can be used by the `beamformer` module.
@@ -74,5 +76,6 @@ from beam_simulator import beamformer
 w = beamformer.generate_uniform_weights(lwasv) #All antennas have the same weighting of 1.0
 
 #Simulate the beam for a pointing center of az = 180 deg, el = 75 deg at 74 MHz with 1 degree resolution.
-pwr = beamformer.beamform(lwasv, w, freq=74e6, azimuth=180.0, elevation=75.0, resolution=1.0, antGainFile='beam_coefficients.npz', dB=False)
+pwr = beamformer.beamform(lwasv, w, freq=74e6, azimuth=180.0, elevation=75.0, resolution=1.0,
+                          antGainFile='beam_coefficients.npz', dB=False)
 ```
