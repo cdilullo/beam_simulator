@@ -6,6 +6,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 
+from textwrap import fill
 from astropy.constants import c, mu0, eps0
 
 __version__ = '1.0'
@@ -42,7 +43,7 @@ class Station(object):
             output += '%s %s=%s' % (('' if first else ','), key, value)
             first = False
         output += '>'
-        return output
+        return fill(output)
     
     @property
     def antennas(self):
@@ -90,13 +91,16 @@ class Antenna(object):
         n = self.__class__.__name__
         a = [(attr, getattr(self, attr)) for attr in ('id', 'pol', 'status', 'x', 'y', 'z', 'cable')]
         
+        if a[-1][1] != []:
+            a[-1] = ('cable', repr(a[-1][1]).replace(',\n    ', ', '))
+
         output = '<%s:' % n
         first = True
         for key, value in a:
             output += '%s %s=%s' % (('' if first else ','), key, value)
             first = False
         output += '>'
-        return output
+        return fill(output, subsequent_indent='          ')
         
     @property
     def cable(self):
@@ -143,7 +147,7 @@ class Cable(object):
             output += '%s %s=%s' % (('' if first else ','), key, value)
             first = False
         output += '>'
-        return output
+        return fill(output, subsequent_indent='         ')
     
     def attenuation(self, frequency, dB=False):
         """
