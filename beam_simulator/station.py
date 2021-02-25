@@ -12,7 +12,7 @@ from astropy.constants import c, mu0, eps0
 __version__ = '1.0'
 __authors__ = ['Chris DiLullo', 'Jayce Dowell']
 __all__     = ['Station', 'Antenna', 'Cable', 'LMR200', 'LMR400',
-               'loadStation', 'loadLWA']
+               'load_station', 'load_LWA']
 
 class Station(object):
     """
@@ -229,7 +229,7 @@ class LMR400(Cable):
 
         super().__init__(id=self.id, length=self.length, vf=self.vf, a=self.a, b=self.b, sigma_a=self.sigma_a, sigma_b=self.sigma_b, k=self.k, f0=self.f0)
 
-def loadStation(arg):
+def load_station(arg):
     """
     Load in a template file (.txt) which contains information
     about the station. See the README and station_template.txt
@@ -338,7 +338,7 @@ def loadStation(arg):
 try:
     from lsl.common.stations import parse_ssmif
 
-    def loadLWA(ssmif):
+    def load_LWA(ssmif):
         """
         Read in a LWA SSMIF file and return a fully populated `station.Station` object.
         
@@ -376,7 +376,7 @@ except ImportError:
     warnings.simplefilter('always', ImportWarning)
     warnings.warn('Cannot import lsl, loading from a LWA SSMIF file disabled', ImportWarning)
 
-    def loadLWA(ssmif):
+    def load_LWA(ssmif):
         """
         Read in a LWA SSMIF file and return a fully populated `station.Station` object.
         
