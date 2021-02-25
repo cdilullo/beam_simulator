@@ -246,12 +246,12 @@ def fit_spherical_harmonics(freq, p1, p2, t1, t2, verbose=False):
     
     if verbose:
         print('Min, Mean, and Max differences between data and fit are:')
-        print('Polarization 1: %.5f, %.5f, %.5f' % (diff1.min(), diff1.mean(), diff1.max()))
-        print('Polarization 2: %.5f, %.5f, %.5f' % (diff2.min(), diff2.mean(), diff2.max()))
+        print(f'Polarization 1: {diff1.min():.5f}, {diff1.mean():.5f}, {diff1.max():.5f}')
+        print(f'Polarization 2: {diff2.min():.5f}, {diff2.mean():.5f}, {diff2.max():.5f}')
         print('')
     print('Fit coefficients saved to file: SphericalHarmonicsFit_%.1fMHz.npz' % freq)
 
-    np.savez('SphericalHarmonicsFit_%.1fMHz.npz' % freq, freq=freq, l=12, realOnly=True,
+    np.savez(f'SphericalHarmonicsFit_{freq:.1f}MHz.npz', freq=freq, l=12, realOnly=True,
              terms1=terms1, terms2=terms2)
 
 def combine_harmonic_fits(*args):

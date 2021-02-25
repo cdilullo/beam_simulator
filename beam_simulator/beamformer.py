@@ -216,7 +216,7 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
     pol2 = np.array(pol2)
 
     #Beamform.
-    print('Simulating beam pattern for a pointing at %.2f deg azimuth, %.2f deg elevation at %.2f MHz' % (azimuth, elevation, freq/1e6))
+    print(f'Simulating beam pattern for a pointing at {azimuth:.2f} deg azimuth, {elevation:.2f} deg elevation at {freq/1e6:.2f} MHz')
 
     pwr1, pwr2 = _computeBeamformedSignal(freq=freq, az=az, el=el, xyz=xyz, cbl=cbl, t=t, w=w, att=att, pol1=pol1, pol2=pol2, vLight=c.value)
 
