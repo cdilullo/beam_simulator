@@ -49,12 +49,12 @@ from beam_simulator import nec
 freqs = [10, 20, 30, 40, 50, 60, 70, 80, 88] #MHz
 
 #Generate the spherical harmonic fits for each frequency separately.
-#Each interation will generate a file named " 'SphericalHarmonicsFit_%.1fMHz.npz' % f "
-for f in freqs:
-    p1 = 'lwa1_xep_%s.out' % f
-    t1 = 'lwa1_xet_%s.out' % f
-    p2 = 'lwa1_yep_%s.out' % f
-    t2 = 'lwa1_yet_%s.out' % f
+#Each interation will generate a file named " 'SphericalHarmonicsFit_{freq:.1f}MHz.npz' "
+for freq in freqs:
+    p1 = f'lwa1_xep_{freq}.out'
+    t1 = f'lwa1_xet_{freq}.out'
+    p2 = f'lwa1_yep_{freq}.out'
+    t2 = f'lwa1_yet_{freq}.out'
 
     nec.fit_spherical_harmonics(f, p1, p2, t1, t2, verbose=False)
 
