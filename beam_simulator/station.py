@@ -6,12 +6,14 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 
+from textwrap import fill
+from scipy.interpolate import interp1d
 from astropy.constants import c, mu0, eps0
 
 __version__ = '1.0'
 __authors__ = ['Chris DiLullo', 'Jayce Dowell']
 __all__     = ['Station', 'Antenna', 'Cable', 'LMR200', 'LMR400',
-               'loadStation', 'loadLWA']
+               'load_station', 'load_LWA']
 
 class Station(object):
     """
@@ -42,7 +44,7 @@ class Station(object):
             output += '%s %s=%s' % (('' if first else ','), key, value)
             first = False
         output += '>'
-        return output
+        return fill(output)
     
     @property
     def antennas(self):
@@ -90,13 +92,16 @@ class Antenna(object):
         n = self.__class__.__name__
         a = [(attr, getattr(self, attr)) for attr in ('id', 'pol', 'status', 'x', 'y', 'z', 'cable')]
         
+        if a[-1][1] != []:
+            a[-1] = ('cable', repr(a[-1][1]).replace(',\n    ', ', '))
+
         output = '<%s:' % n
         first = True
         for key, value in a:
             output += '%s %s=%s' % (('' if first else ','), key, value)
             first = False
         output += '>'
-        return output
+        return fill(output, subsequent_indent='          ')
         
     @property
     def cable(self):
@@ -143,19 +148,19 @@ class Cable(object):
             output += '%s %s=%s' % (('' if first else ','), key, value)
             first = False
         output += '>'
-        return output
+        return fill(output, subsequent_indent='         ')
     
     def attenuation(self, frequency, dB=False):
         """
         Compute the signal attenuation due to cable loss.
-        
+
         Inputs:
          * frequency - Frequency in Hz.
          * dB - Return the cable attenuation in dB.
 
         Returns:
          * Cable attenuation.
-        """ 
+        """
         a0 = ( np.sqrt(np.pi*self.k*eps0.value / 4.0) * ((self.sigma_a**(-0.5) / self.a) + (self.sigma_b**(-0.5) / self.b))
              * (np.log(self.b/self.a))**(-1) * self.f0**(0.5) )
         
@@ -192,7 +197,11 @@ class LMR200(Cable):
     Convenience subclass to populate a Cable object for a LMR200 cable. Inputs:
      * Cable ID
      * Cable length [m]
-    """    
+
+    .. note::
+     The values of the attenuation method are set to match the Times Mircowave LMR-200 data sheet.
+     See https://www.timesmicrowave.com/DataSheets/CableProducts/LMR-200.pdf for more information.
+    """
 
     def __init__(self, id, length):
         self.id = id 
@@ -207,9 +216,37 @@ class LMR200(Cable):
 
         super().__init__(id=self.id, length=self.length, vf=self.vf, a=self.a, b=self.b, sigma_a=self.sigma_a, sigma_b=self.sigma_b, k=self.k, f0=self.f0)
 
+    def attenuation(self, frequency, dB=False):
+        """
+        Compute the signal attenuation due to cable loss.
+
+        Inputs:
+         * frequency - Frequency in Hz.
+         * dB - Return the cable attenuation in dB.
+
+        Returns:
+         * Cable attenuation.
+        """
+
+        freqs = np.array([30, 50, 150, 220, 450, 900, 1500, 1800, 2000, 2500, 5800, 8000])*1e6
+        ref   = 10**( np.array([5.8, 7.5, 13.1, 15.9, 22.8, 32.6, 42.4, 46.6, 49.3, 55.4, 86.5, 102.8]) * (self.length / 100.0) / 10.0 )
+
+        intp = interp1d(freqs, ref, kind='linear')
+        att = intp(frequency)
+        if dB:
+            att = 10.0 * np.log10(att)
+
+        return att
+
 class LMR400(Cable):
     """
-    NOTE: This is not functioning properly yet.
+    Convenience subclass to populate a Cable object for a LMR400 cable. Inputs:
+     * Cable ID
+     * Cable length [m]
+
+    .. note::
+     The values of the attenuation method are set to match the Times Mircowave LMR-400 data sheet.
+     See https://www.timesmicrowave.com/DataSheets/CableProducts/LMR-400.pdf for more information.
     """
    
     def __init__(self, id, length):
@@ -225,7 +262,29 @@ class LMR400(Cable):
 
         super().__init__(id=self.id, length=self.length, vf=self.vf, a=self.a, b=self.b, sigma_a=self.sigma_a, sigma_b=self.sigma_b, k=self.k, f0=self.f0)
 
-def loadStation(arg):
+    def attenuation(self, frequency, dB=False):
+        """
+        Compute the signal attenuation due to cable loss.
+
+        Inputs:
+         * frequency - Frequency in Hz.
+         * dB - Return the cable attenuation in dB.
+
+        Returns:
+         * Cable attenuation.
+        """
+
+        freqs = np.array([30, 50, 150, 220, 450, 900, 1500, 1800, 2000, 2500, 5800, 8000])*1e6
+        ref   = 10**( np.array([2.2, 2.9, 5.0, 6.1, 8.9, 12.8, 16.8, 18.6, 19.6, 22.2, 35.5, 42.7]) * (self.length / 100.0) / 10.0 )
+
+        intp = interp1d(freqs, ref, kind='linear')
+        att = intp(frequency)
+        if dB:
+            att = 10.0 * np.log10(att)
+
+        return att
+
+def load_station(arg):
     """
     Load in a template file (.txt) which contains information
     about the station. See the README and station_template.txt
@@ -334,7 +393,7 @@ def loadStation(arg):
 try:
     from lsl.common.stations import parse_ssmif
 
-    def loadLWA(ssmif):
+    def load_LWA(ssmif):
         """
         Read in a LWA SSMIF file and return a fully populated `station.Station` object.
         
@@ -372,7 +431,7 @@ except ImportError:
     warnings.simplefilter('always', ImportWarning)
     warnings.warn('Cannot import lsl, loading from a LWA SSMIF file disabled', ImportWarning)
 
-    def loadLWA(ssmif):
+    def load_LWA(ssmif):
         """
         Read in a LWA SSMIF file and return a fully populated `station.Station` object.
         
