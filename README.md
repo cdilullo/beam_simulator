@@ -56,7 +56,7 @@ for freq in freqs:
     p2 = f'lwa1_yep_{freq}.out'
     t2 = f'lwa1_yet_{freq}.out'
 
-    nec.fit_spherical_harmonics(f, p1, p2, t1, t2, verbose=False)
+    nec.fit_spherical_harmonics(freq, p1, p2, t1, t2, verbose=False)
 
 #Now the .npz files containing the spherical harmonic fits can be combined.
 nec.combine_harmonic_fits('SphericalHarmonicsFit_10.0MHz.npz', 'SphericalHarmonicsFit_20.0MHz.npz',
