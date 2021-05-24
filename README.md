@@ -38,7 +38,7 @@ NOTES:
 ```
 from beam_simulator import station
 
-lwasv = station.loadLWA("lwasv-ssmif.txt")
+lwasv = station.load_LWA("lwasv-ssmif.txt")
 ```
 
 ### Representing the LWA dipole gain pattern and fitting spherical harmonics to it as a function of frequency.
