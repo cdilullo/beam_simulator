@@ -1,0 +1,27 @@
+language: python
+
+python:
+    - 3.6
+
+os:
+    - osx
+    - linux
+
+install:
+    - pip install \
+      numpy \
+      scipy \
+      aipy \
+      astropy \
+      codecov
+
+script:
+    - cd tests
+
+script:
+    - cd tests
+    - coverage run -m unittest discover
+
+after_success:
+    - cd tests
+    - codecov
