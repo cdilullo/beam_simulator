@@ -25,6 +25,6 @@ setup(
                    'Operating System :: POSIX :: Linux'],
     packages = find_packages(),
     python_requires = '>=3.6',
-    install_requires = ['aipy>=3.0.1', 'numpy>=1.19', 'scipy>=1.6', 'astropy>=4.2',
+    install_requires = ['aipy>=3.0.1', 'numpy>=1.19', 'scipy>=1.5.4', 'astropy>=4.1',
                         'matplotlib>=3.3.2','numba>=0.51.2']
     )

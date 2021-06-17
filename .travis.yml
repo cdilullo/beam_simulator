@@ -7,6 +7,36 @@ os:
     - osx
     - linux
 
+language: sh
+
+env:
+    - HOMEBREW_NO_INSTALL_CLEANUP=1
+    - HOMEBREW_NO_ANALYTICS=1
+
+addons:
+    apt:
+       packages:
+            - build-essential
+            - curl
+            - git
+            - pkg-config
+            - gzip
+            - software-properties-common
+            - python-dev
+            - python3-dev
+            - libgdbm-dev
+            - libfftw3-dev
+            - libcfitsio-dev
+            - libboost-python-dev
+
+    homebrew:
+       update: false
+       packages:
+            - python3
+            - pkg-config
+            - git
+            - fftw
+
 install:
     - pip install \
       numpy \
