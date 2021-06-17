@@ -3,11 +3,6 @@ language: python
 python:
     - 3.6
 
-os:
-    - osx
-    - linux
-
-
 jobs:
   include:
     - os: osx
