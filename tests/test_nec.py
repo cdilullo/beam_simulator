@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import unittest
 import numpy as np
 from beam_simulator import nec
 

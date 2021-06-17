@@ -24,6 +24,7 @@ addons:
             - software-properties-common
             - python-dev
             - python3-dev
+            - python3-pip
             - libgdbm-dev
             - libfftw3-dev
             - libcfitsio-dev
