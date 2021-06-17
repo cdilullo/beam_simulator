@@ -19,33 +19,38 @@ class AntennaPattern(object):
     """
     Object to store the antenna gain pattern
     for a single frequency from a NEC4 output 
-    file.
+    file. If no file is given, then an isotropic 
+    gain pattern will be generated.
     
     .. note:: 
      The NEC4 file must contain an EXCITATION section.
     """
     
-    def __init__(self, name):
+    def __init__(self, name=None):
         
-        self.antenna_pat = np.zeros((360,91), dtype=np.complex64)
+        if name is not None:
+            self.antenna_pat = np.zeros((360,91), dtype=np.complex64)
         
-        fh = open(name, 'r')
-        lines = fh.readlines()
+            fh = open(name, 'r')
+            lines = fh.readlines()
         
-        #Look for 'EXCITATION'.
-        excitation = None
-        for line in lines:
-            if line.find('EXCITATION') >= 0:
-                excitation = True
-                break
+            #Look for 'EXCITATION'.
+            excitation = None
+            for line in lines:
+                if line.find('EXCITATION') >= 0:
+                    excitation = True
+                    break
                 
-        if excitation:
-            self._read_excitation(lines)
+            if excitation:
+                self._read_excitation(lines)
             
+            else:
+                raise RuntimeError("The provided NEC4 file doesn't have an EXCITATION section!")
+            
+            fh.close()
+
         else:
-            raise RuntimeError("The provided NEC4 file doesn't have an EXCITATION section!")
-            
-        fh.close()
+            self.antenna_pat = np.ones((360,91), dtype=np.complex64)
         
     def _read_excitation(self, lines):
         """
