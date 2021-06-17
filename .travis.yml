@@ -38,14 +38,14 @@ addons:
             - fftw
 
 install:
-    - pip install \
+    - pip3 install \
       numpy \
       scipy \
       aipy \
       astropy \
       codecov
 
-    - pip install .
+    - pip3 install .
 
 script:
     - cd tests
