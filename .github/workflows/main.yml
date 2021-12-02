@@ -44,9 +44,9 @@ jobs:
             setuptools \
             numpy \
             scipy \
-            aipy \
             astropy \
             coverage
+          python -m pip install aipy
       - name: "Build and Install"
         run: python -m pip install .
       - name: Test
