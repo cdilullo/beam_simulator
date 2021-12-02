@@ -2,6 +2,8 @@ Beam Simulator
 ==============
 [![Build and Test](https://github.com/cdilullo/beam_simulator/actions/workflows/main.yml/badge.svg)](https://github.com/cdilullo/beam_simulator/actions/workflows/main.yml) [![Documentation Status](https://readthedocs.org/projects/beam-simulator/badge/?version=latest)](https://beam-simulator.readthedocs.io/en/latest/?badge=latest)
 
+<!-- [![Paper](https://img.shields.io/badge/arXiv-2103.03347-blue.svg)](https://arxiv.org/abs/2103.03347) -->
+
 Description
 -----------
 This package contains tools for simulating the beam pattern of an arbitray phased array. It consists of 3 modules:
