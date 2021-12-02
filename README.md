@@ -1,6 +1,6 @@
 Beam Simulator
 ==============
-[![Build Status](https://www.travis-ci.com/cdilullo/beam_simulator.svg?branch=master)](https://www.travis-ci.com/cdilullo/beam_simulator)  [![Documentation Status](https://readthedocs.org/projects/beam-simulator/badge/?version=latest)](https://beam-simulator.readthedocs.io/en/latest/?badge=latest)
+[![Build and Test](https://github.com/cdilullo/beam_simulator/actions/workflows/main.yml/badge.svg)](https://github.com/cdilullo/beam_simulator/actions/workflows/main.yml) [![Documentation Status](https://readthedocs.org/projects/beam-simulator/badge/?version=latest)](https://beam-simulator.readthedocs.io/en/latest/?badge=latest)
 
 Description
 -----------
