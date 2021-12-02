@@ -52,7 +52,7 @@ jobs:
       - name: Test
         run: |
           cd tests
-          coverage run -m unittest discover
+          coverage run --source=beam_simulator -m unittest discover
           coverage xml
       - name: "Upload Coverage"
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8' }}
