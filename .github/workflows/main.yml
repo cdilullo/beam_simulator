@@ -43,6 +43,7 @@ jobs:
           python -m pip install \
             setuptools \
             numpy \
+            numba \
             scipy \
             astropy \
             coverage
