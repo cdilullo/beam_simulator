@@ -3,7 +3,7 @@ Beam Simulator
 [![Build and Test](https://github.com/cdilullo/beam_simulator/actions/workflows/main.yml/badge.svg)](https://github.com/cdilullo/beam_simulator/actions/workflows/main.yml) [![codecov](https://codecov.io/gh/cdilullo/beam_simulator/branch/master/graph/badge.svg?token=VHRPYN6Y98)](https://codecov.io/gh/cdilullo/beam_simulator)
  [![Documentation Status](https://readthedocs.org/projects/beam-simulator/badge/?version=latest)](https://beam-simulator.readthedocs.io/en/latest/?badge=latest)
 
-[![Paper](https://img.shields.io/badge/arXiv-2103.03347-blue.svg)](https://arxiv.org/abs/2112.13899)
+[![Paper](https://img.shields.io/badge/arXiv-2112.13899-blue.svg)](https://arxiv.org/abs/2112.13899)
 
 Description
 -----------
