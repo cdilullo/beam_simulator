@@ -19,12 +19,16 @@ class Station(object):
     """
     Object to store information about an antenna array. Stores:
      * Station Name
-     * Antenna objects
+     * Antenna Objects
+     * Array Latitude (float degrees)
+     * Array Longitude (float degrees)
     """
 
-    def __init__(self, name=None, antennas=None):
+    def __init__(self, name=None, latitude=None, longitude=None, antennas=None):
 
         self.name = name
+        self.latitude = latitude
+        self.longitude = longitude
 
         if antennas is None:
             self._antennas = []
@@ -312,6 +316,10 @@ def load_station(arg):
         if re.match('^NAME', line):
             name = line.split('"')[1]
             continue
+        elif re.match('^LAT', line):
+            lat = float(line.split(' ')[-1])
+        elif re.match('^LON', line):
+            lon = float(line.split(' ')[-1])
         elif re.match('^ANTS', line):
             numAnts = int(line.split(' ')[-1])
             print("Number of antennas is %i" % numAnts)
@@ -387,7 +395,7 @@ def load_station(arg):
         antennas.append(Antenna(id=antID[i], x=antX[i], y=antY[i], z=antZ[i],
                                 status=antStat[i], pol=antPol[i], cable=cables[i]))
 
-    station = Station(name=name,antennas=antennas)
+    station = Station(name=name, latitude=lat, longitude=lon, antennas=antennas)
     return station
 
 try:
@@ -407,6 +415,8 @@ try:
         """
         site = parse_ssmif(ssmif)
 
+        lat, lon = site.lat*(180.0/np.pi), site.lon*(180.0/np.pi)
+
         antennas = []
         for ant in site.antennas:
             #Antenna information.
@@ -422,7 +432,7 @@ try:
             antennas.append( Antenna(id=antID, x=antX, y=antY, z=antZ, status=antStat, pol=antPol, 
                             cable=LMR200(id=cblID, length=cblLen)) )
 
-        station = Station(name=site.name, antennas=antennas)
+        station = Station(name=site.name, latitude=lat, longitude=lon, antennas=antennas)
 
         return station
 
