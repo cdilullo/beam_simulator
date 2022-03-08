@@ -2,7 +2,6 @@
 Driftcurve related classes and functions.
 """
 
-import tqdm
 import ephem
 import astropy
 import numpy as np
@@ -50,8 +49,8 @@ def generate_observed_sky(station, date=None, skymap='GSM2008', freq=60e6, retur
         date = datetime.utcfromtimestamp(date)
 
     #Fill in the relevant info.
-    observer.lat = station.latitude
-    observer.lon = station.longitude
+    observer.lat = station.latitude*(np.pi/180.0)
+    observer.lon = station.longitude*(np.pi/180.0)
     observer.date = date
 
     #Get the observed sky.
@@ -122,7 +121,8 @@ def generate_driftcurve(station, beam, start=None, stop=None, step=30, skymap='G
     drift = np.zeros((beam.shape[0],len(times)), dtype=np.float64)
     for i in range(drift.shape[0]):
         print(f'Working on pol {i}')
-        for j,t in tqdm.tqdm(enumerate(times)):
+        for j,t in enumerate(times):
+            #Generate the observed sky at the given time.
             observer, sky = generate_observed_sky(station=station, date=t, skymap=skymap, freq=freq, return_observer=True)
 
             #Convert sky HEALPix coords from Galactic to Equatorial in degrees.
@@ -149,7 +149,7 @@ def generate_driftcurve(station, beam, start=None, stop=None, step=30, skymap='G
             gain = Beam_Pattern(az, alt, pol=i)
 
             #Multiply the observed sky by the given beam pattern.
-            sky *= gain
+            sky[observer._mask] *= gain
 
             #Sum to find total observed power.
             drift[i,j] = np.sum(sky) / gain.sum()
