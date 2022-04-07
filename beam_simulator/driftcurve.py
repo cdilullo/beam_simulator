@@ -2,7 +2,6 @@
 Driftcurve related classes and functions.
 """
 
-import sys
 import ephem
 import astropy
 import numpy as np
