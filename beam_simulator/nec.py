@@ -2,18 +2,15 @@
 Utilities related to representing an indiviudal antenna
 radiation pattern from a NEC4 output file.
 """
-import os
-import sys
-import aipy
+
 import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.special import sph_harm
 
-
 __version__ = '1.0'
 __authors_ = ['Chris DiLullo', 'Jayce Dowell']
-__all__ = ['AntennaPattern', 'sphfit', 'sphval', 'fit_spherical_harmonics', 'combine_harmonic_fits']
+__all__ = ['AntennaPattern', 'fit_antenna_response']
 
 class AntennaPattern(object):
     """
@@ -23,13 +20,14 @@ class AntennaPattern(object):
     gain pattern will be generated.
     
     .. note:: 
-     The NEC4 file must contain an EXCITATION section.
+     The NEC4 file must contain an EXCITATION section and be
+     at 1 degree resolution.
     """
     
     def __init__(self, name=None):
         
         if name is not None:
-            self.antenna_pat = np.zeros((360,91), dtype=np.complex64)
+            self.antenna_pat = np.zeros((361,91), dtype=np.complex64)
         
             fh = open(name, 'r')
             lines = fh.readlines()
@@ -50,7 +48,7 @@ class AntennaPattern(object):
             fh.close()
 
         else:
-            self.antenna_pat = np.ones((360,91), dtype=np.complex64)
+            self.antenna_pat = np.ones((361,91), dtype=np.complex64)
         
     def _read_excitation(self, lines):
         """
@@ -86,205 +84,85 @@ class AntennaPattern(object):
         ax.tick_params(direction='in',size=5)
         plt.show()
 
-def sphfit(az, alt, data, lmax=5, degrees=False, real_only=False):
+def fit_antenna_response(freqs, p1, t1, p2, t2, lmax=None):
     """
-    Decompose a spherical or semi-spherical data set into spherical harmonics.
-
-    Parameters:
-     * az: 2-D numpy array of azimuth coordinates in radians or degrees if the `degrees` keyword is set
-     * alt: 2-D numpy array of altitude coordinates in radians or degrees if the `degrees` keyword is set
-     * data: 2-D numpy array of the data to be fit
-     * lmax: integer setting the maximum order harmonic to fit
-     * degrees: boolean of whether or not the input azimuth and altitude coordinates are in degrees
-     * real_only: boolean of whether or not the input data is purely real. If the data are real, only coefficients for modes >= 0 are computed
-
-    Returns:
-     * 1-D complex numpy array with the spherical harmonic coefficients packed in order of increasing harmonic order, i.e. (0,0), (1,-1), (1,0), (1,1), etc.
-       If `real_only` is True, the negative coefficients are excluded from the output array.
+    Fit the gain response of an antenna as a polynomial in frequency.
  
-    .. note::
-     sphfit was designed to fit the LWA dipole response pattern as a function of
-     azimuth and elevation.  Elevation angles are mapped to theta angles by adding
-     pi/2 so that an elevation of 90 degrees corresponds to a theta of 180 degrees.
-     To fit in terms of spherical coordianates, subtract pi/2 from the theta values
-     before running.
-    """
-    
-    if degrees:
-        rAz = az*np.pi/180.0
-        rAlt = alt*np.pi/180.0
-    else:
-        rAz = 1.0*az
-        rAlt = 1.0*alt
-    rAlt += np.pi/2
-    sinAlt = np.sin(rAlt)
-    
-    if real_only:
-        nTerms = int((lmax*(lmax+3)+2)/2)
-        terms = np.zeros(nTerms, dtype=np.complex64)
-        
-        t = 0
-        for l in range(lmax+1):
-            for m in range(0, l+1):
-                Ylm = sph_harm(m, l, rAz, rAlt)
-                terms[t] = (data*sinAlt*Ylm.conj()).sum() * (rAz[1,0]-rAz[0,0])*(rAlt[0,1]-rAlt[0,0])
-                t += 1
-                
-    else:
-        nTerms = int((lmax+1)**2)
-        terms = np.zeros(nTerms, dtype=np.complex64)
-        
-        t = 0
-        for l in range(lmax+1):
-            for m in range(-l, l+1):
-                Ylm = sph_harm(m, l, rAz, rAlt)
-                terms[t] = (data*sinAlt*Ylm.conj()).sum()
-                t += 1
-                
-    return terms
-
-def sphval(terms, az, alt, degrees=False, real_only=False):
-    """
-    Evaluate a set of spherical harmonic coefficents at a specified set of azimuth and altitude coordinates.
-
     Parameters:
-     * terms: 1-D complex numpy array, typically from sphfit
-     * az: 2-D numpy array of azimuth coordinates in radians or degrees if the `degrees` keyword is set
-     * alt: 2-D numpy array of altitude coordinates in radian or degrees if the `degrees` keyword is set
-     * degrees: boolean of whether or not the input azimuth and altitude coordinates are in degrees or not
-     * real_only: boolean of whether or not the input data is purely real or not.  If the data are real, only coefficients for modes >= 0 are computed.
+     * freqs: List or array of frequencies in MHz
+     * p1: List or array containing the names of NEC4 outputs for polarization 1 parallel response
+     * t1: List or array containing the names of NEC4 outputs for polarization 1 transverse response
+     * p2: List or array containing the names of NEC4 outputs for polarization 2 parallel response
+     * t2: List or array containing the names of NEC4 outputs for polarization 2 transverse response
+     * lmax: Maximum degree of spherical harmonics to use for decomposition (None = No spherical harmonic decomposition)
 
     Returns:
-     * 2-D numpy array of the harmoics evalated and summed at the given coordinates.
-    
-    .. note::
-     sphval was designed to evaluate fits of the LWA dipole response pattern as a
-     function of azimuth and elevation. Elevation angles are mapped to theta angles
-     by adding pi/2 so that an elevation of 90 degrees corresponds to a theta of 180
-     degrees. To spherical harmonics in terms of spherical coordianates, subtract pi/2 from 
-     the theta values before running.
+     * A .npz file containing the coefficients of the polynomial in frequency
     """
     
-    if degrees:
-        rAz = az*np.pi/180.0
-        rAlt = alt*np.pi/180.0
+    if lmax is None:
+        pol1, pol2 = [], []
+        for i in range(freqs.size):
+            extP = AntennaPattern(p1[i])
+            extT = AntennaPattern(t1[i])
+            ext1 = (np.abs(extP.antenna_pat)**2 + np.abs(extT.antenna_pat)**2) / 2.0
+            ext1 /= ext1.max()
+
+            extP = AntennaPattern(p2[i])
+            extT = AntennaPattern(t2[i])
+            ext2 = (np.abs(extP.antenna_pat)**2 + np.abs(extT.antenna_pat)**2) / 2.0
+            ext2 /= ext2.max()
+
+            pol1.append(ext1)
+            pol2.append(ext2)
+
+        pol1, pol2 = np.array(pol1), np.array(pol2)
+        pol1 = pol1.reshape((pol1.shape[0], pol1.shape[1]*pol1.shape[2]))
+        pol2 = pol2.reshape((pol2.shape[0], pol2.shape[1]*pol2.shape[2]))
+
+        coeffs1 = np.polyfit(freqs/1e3, pol1, deg=freqs.size-1)
+        coeffs2 = np.polyfit(freqs/1e3, pol2, deg=freqs.size-1)
+
+        np.savez('beam_coefficients.npz', coeffs1=coeffs1, coeffs2=coeffs2, deg=freqs.size-1)
+
     else:
-        rAz = 1.0*az
-        rAlt = 1.0*alt
-    rAlt += np.pi/2
-    
-    nTerms = terms.size
-    if real_only:
-        lmax = int((np.sqrt(1+8*nTerms)-3)/2)
+        #Az is 0 at +Y (North), Phi is zero at +X (East)
+        #El is 0 at horizon, Theta is 0 at +Z (Up)
+        az = np.arange(0, 361, 1)/1.0 * (np.pi/180.0)
+        el = np.arange(0, 91, 1)/1.0 * (np.pi/180.0)
+        phi = (-(az - np.pi/2) + 2*np.pi) % (2*np.pi)
+        theta = (np.pi/2.0) - el
+        theta, phi = np.meshgrid(theta, phi)
 
-        t = 0
-        out = np.zeros(az.shape, dtype=np.float32)
-        for l in range(lmax+1):
-            Ylm = sph_harm(0, l, rAz, rAlt)
-            out += np.real(terms[t]*Ylm)
-            t += 1
-            for m in range(1, l+1):
-                Ylm = sph_harm(m, l, rAz, rAlt)
-                out += np.real(terms[t]*Ylm)
-                out += np.real(terms[t]*Ylm.conj()/(-1)**m)
-                t += 1
-                
-    else:
-        lmax = int(np.sqrt(nTerms)-1)
+        pol1, pol2 = [], []
+        for i in range(freqs.size):
+            extP = AntennaPattern(p1[i])
+            extT = AntennaPattern(t1[i])
+            ext1 = (np.abs(extP.antenna_pat)**2 + np.abs(extT.antenna_pat)**2) / 2.0
+            ext1 /= ext1.max()
+
+            extP = AntennaPattern(p2[i])
+            extT = AntennaPattern(t2[i])
+            ext2 = (np.abs(extP.antenna_pat)**2 + np.abs(extT.antenna_pat)**2) / 2.0
+            ext2 /= ext2.max()
+
+            nTerms = int((lmax*(lmax+3)+2)/2)
+            terms1 = np.zeros(nTerms, dtype=np.complex64)
+            terms2 = np.zeros(nTerms, dtype=np.complex64)
         
-        t = 0
-        out = np.zeros(az.shape, dtype=np.complex64)
-        for l in range(lmax+1):
-            for m in range(-l, l+1):
-                Ylm = sph_harm(m, l, rAz, rAlt)
-                out += terms[t]*Ylm
-                t += 1
-                
-    return out
-
-
-def fit_spherical_harmonics(freq, p1, p2, t1, t2, verbose=False):
-    """
-    Script to represent the full gain pattern of a single 
-    antenna at a single frequency in terms of spherical 
-    harmonics.
-
-    Parameters:
-     * freq: NEC simulation frequency in MHz.
-     * p1: NEC output file for parallel component of polarization 1.
-     * p2: NEC output file for parallel component of polarization 2.
-     * t1: NEC output file for transverse component of polarization 1.
-     * t2: NEC output file for transverse component of polarization 2.
-    
-    Returns:
-     * A .npz file containing the terms of the spherical harmonic fit for each polarization.
-    """
-    
-    #Compute the full pattern (parallel + transverse) for each polarization.
-    extP = AntennaPattern(p1)
-    extT = AntennaPattern(t1)
-    ext1 = (np.abs(extP.antenna_pat)**2 + np.abs(extT.antenna_pat)**2) / 2.0
-    ext1 /= ext1.max()
-
-    extP = AntennaPattern(p2)
-    extT = AntennaPattern(t2)
-    ext2 = (np.abs(extP.antenna_pat)**2 + np.abs(extT.antenna_pat)**2) / 2.0
-    ext2 /= ext2.max()
-    
-    #Build the Az/El arrays.
-    az = np.arange(0,360,1)
-    el = np.arange(0,91,1)
-    el,az = np.meshgrid(el,az)
-    
-    top = aipy.coord.azalt2top(np.array([[az*np.pi/180.0], [el*np.pi/180.0]]))
-    theta, phi = aipy.coord.xyz2thphi(top)
-    theta = theta.squeeze()
-    phi = phi.squeeze()
-    
-    terms1 = sphfit(phi, theta-np.pi/2, ext1, lmax=12, degrees=False, real_only=True)
-    terms2 = sphfit(phi, theta-np.pi/2, ext2, lmax=12, degrees=False, real_only=True)
-    
-    fit1 = sphval(terms1, phi, theta-np.pi/2, degrees=False, real_only=True)
-    fit2 = sphval(terms2, phi, theta-np.pi/2, degrees=False, real_only=True)
-    diff1 = ext1 - fit1
-    diff2 = ext2 - fit2
-    
-    if verbose:
-        print('Min, Mean, and Max differences between data and fit are:')
-        print(f'Polarization 1: {diff1.min():.5f}, {diff1.mean():.5f}, {diff1.max():.5f}')
-        print(f'Polarization 2: {diff2.min():.5f}, {diff2.mean():.5f}, {diff2.max():.5f}')
-        print('')
-    print('Fit coefficients saved to file: SphericalHarmonicsFit_%.1fMHz.npz' % freq)
-
-    np.savez(f'SphericalHarmonicsFit_{freq:.1f}MHz.npz', freq=freq, l=12, realOnly=True,
-             terms1=terms1, terms2=terms2)
-
-def combine_harmonic_fits(*args):
-    """
-    Takes in spherical harmonic fits output by fit_spherical_harmonics and 
-    represents them as a polynomial in frequency. Returns the fit coefficients
-
-    Parameters:
-     * args: Series of .npz files output by fit_spherical_harmonics for different 
-           frequencies.
+            t = 0
+            for l in range(lmax+1):
+                for m in range(0, l+1):
+                    Ylm = sph_harm(m, l, phi, theta)
+                    terms1[t] = (ext1*np.sin(theta)*Ylm.conj()).sum() * (phi[1,0]-phi[0,0])*(theta[0,1]-theta[0,0])
+                    terms2[t] = (ext2*np.sin(theta)*Ylm.conj()).sum() * (phi[1,0]-phi[0,0])*(theta[0,1]-theta[0,0])
+                    t += 1
         
-    Returns:
-     * A .npz file containing all input spherical harmonic fit terms.
-    """
+            pol1.append(terms1)
+            pol2.append(terms2)
 
-    freqs, coeffs1, coeffs2 = [], [], []
-    for f in args:
-        fit = np.load(f)
-        freqs.append( fit['freq'])
-        coeffs1.append( fit['terms1'] )
-        coeffs2.append( fit['terms2'] ) 
+        pol1, pol2 = np.array(pol1), np.array(pol2)
+        coeffs1 = np.polyfit(freqs/1e3, pol1, deg=pol1.shape[0]-1)
+        coeffs2 = np.polyfit(freqs/1e3, pol2, deg=pol2.shape[0]-1)
 
-    freqs = np.array(freqs)
-    coeffs1 = np.array(coeffs1)
-    coeffs2 = np.array(coeffs2)
-    
-    coeffs1 = np.polyfit(freqs/1e3, coeffs1, deg=coeffs1.shape[0]-1)
-    coeffs2 = np.polyfit(freqs/1e3, coeffs2, deg=coeffs2.shape[0]-1)
-    
-    np.savez('beam_coefficients.npz', coeffs1=coeffs1, coeffs2=coeffs2,
-             lmax=12, deg=coeffs1.shape[0]-1)
+        np.savez('beam_coefficients.npz', coeffs1=coeffs1, coeffs2=coeffs2, deg=freqs.size-1, lmax=lmax)    

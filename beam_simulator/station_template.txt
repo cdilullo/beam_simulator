@@ -4,6 +4,8 @@
 ### Station Information ###
 ---------------------------
 NAME    "Test Station"
+LAT     34.348358
+LON     -106.885783
 ANTS    8
 ---------------------------
 ### Antenna Information ###
