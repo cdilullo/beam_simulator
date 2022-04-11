@@ -49,16 +49,18 @@ lwasv = station.load_LWA("lwasv-ssmif.txt")
 ```
 
 ### Representing the LWA dipole gain pattern and fitting spherical harmonics to it as a function of frequency.
+The LWA dipole gain pattern has been modeled using NEC4 at multiple frequencies. These can be loaded into 
+Beam Simulator in order to build a model of the dipole gain pattern.
 ```
 from beam_simulator import nec
 
 #We need to read in all NEC4 output files for a series of frequencies.
 freqs = [10, 20, 30, 40, 50, 60, 70, 80, 88] #MHz
 
-p1 = [f'nec_outputs/lwa1_xep_{freq}.out' for freq in freqs]
-t1 = [f'nec_outputs/lwa1_xet_{freq}.out' for freq in freqs]
-p2 = [f'nec_outputs/lwa1_yep_{freq}.out' for freq in freqs]
-t2 = [f'nec_outputs/lwa1_yet_{freq}.out' for freq in freqs]
+p1 = [f'lwa1_xep_{freq}.out' for freq in freqs]
+t1 = [f'lwa1_xet_{freq}.out' for freq in freqs]
+p2 = [f'lwa1_yep_{freq}.out' for freq in freqs]
+t2 = [f'lwa1_yet_{freq}.out' for freq in freqs]
 
 #Fit the spherical harmonic decompisition as a polynomial in frequency.
 nec.fit_antenna_response(freqs, p1, t1, p2, t2, lmax=12)  
