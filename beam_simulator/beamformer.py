@@ -160,7 +160,7 @@ def _computeBeamformedSignal(freq, az, el, xyz, cbl, t, w, att, pol1, pol2, vLig
 
     return pwr1, pwr2
 
-def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0, antGainFile=None, dB=False):
+def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0, antGainFile=None, dB=False):
     """
     Given a weighting vector and beam_simulator.Station object,
     simulate the beam pattern on the sky for a given frequency
@@ -201,8 +201,18 @@ def beamform(station, w, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0,
     #Convert az and el to radians.
     az, el = az*np.pi/180.0, el*np.pi/180.0
 
-    #Compute the delays across the array for the desired pointing center.
-    t = calc_geometric_delays(station=station, freq=freq, azimuth=azimuth, elevation=elevation)
+    #If no custom delays are given, compute the delays across the array for
+    #the desired pointing center.
+    if delays is None:
+        t = calc_geometric_delays(station=station, freq=freq, azimuth=azimuth, elevation=elevation)
+    else:
+        t = delays
+ 
+    #If no custom weights are given, apply uniform weighting across the array.
+    if weights is None:
+        w = generate_uniform_weights(station=station)
+    else:
+        w = weights
 
     #Figure out which elements correspond to each polarization and ignore bad antennas.
     pol1 = [i for i,a in enumerate(station.antennas) if a.status == 1 and a.pol == 1]
