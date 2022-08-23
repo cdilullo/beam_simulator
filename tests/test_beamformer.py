@@ -44,7 +44,7 @@ class beamformer_tests(unittest.TestCase):
         s = station.load_station('../beam_simulator/station_template.txt')
         w = beamformer.generate_uniform_weights(s)
 
-        pwr = beamformer.beamform(station=s, w=w)
+        pwr = beamformer.beamform(station=s)
 
         self.assertNotEqual(pwr.sum(), 0)
         
