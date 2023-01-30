@@ -1,5 +1,5 @@
 """
-Driftcurve related classes and functions.
+Functions related to simulating the sky above a specific observer and simulating driftcurves and spectra for a given beam pointing.
 """
 
 import ephem
@@ -7,6 +7,8 @@ import astropy
 import numpy as np
 import healpy as hp
 import matplotlib.pyplot as plt
+
+from . import beamformer
 
 from tqdm import tqdm
 from datetime import datetime, timedelta
@@ -165,8 +167,7 @@ def generate_driftcurve(station, beam, freq=60e6, start=None, stop=None, step=30
     #Plot the driftcurve, if requested.
     if plot:
         fig, ax = plt.subplots(1,1)
-        fig.suptitle(f'{station.name} Driftcurve at {freq/1e6} MHz Using {skymap}', fontsize=14)
-
+        ax.set_title(f'{station.name} Driftcurve at {freq/1e6} MHz Using {skymap}', fontsize=14)
         ax.plot(LSTs, drift[0,:], 'o', label='Pol 1')
         ax.plot(LSTs, drift[1,:], 'o', label='Pol 2')
         ax.set_xlabel('Local Sidereal Time [h]', fontsize=12)
@@ -177,3 +178,90 @@ def generate_driftcurve(station, beam, freq=60e6, start=None, stop=None, step=30
         plt.show()
 
     return LSTs, drift
+
+
+def generate_spectrum(station, weights, freqs, azimuth=90.0, elevation=90.0, resolution=1.0, ant_gain_file=None, date=None, skymap='GSM2008', verbose=True, plot=False):
+    """
+    Simulate a spectrum across a set of frequencies for a given station beam pointing and time.
+
+    Inputs:
+     * station - Station obect
+     * weights - weighting array for the station elements
+     * freqs - Frequencies in Hz
+     * azimuth - Azimuth East of North in degrees
+     * elevation - Elevation above the horizon in degrees
+     * resolution - Resolution of the beam simulations in degrees
+     * ant_gain_file - .npz file which stores the antenna gain pattern fit across frequency
+     * date - UTC date/time as either a datetime.datetime object or a Unix timestamp
+     * skymap - Sky map to use. Valid options are 'GSM2008', 'GSM2016', or 'LFSM'
+     * verbose - Show progress bar
+     * plot - Plot the final spectra
+    """
+
+    #Set up the observer information.
+    if date is None:
+        date = datetime.utcnow()
+    elif not isinstance(date, datetime):
+        date = datetime.utcfromtimestamp(date)
+
+    #Set up the function to query the beam pattern.
+    ires = int(round(1.0/min([1.0, resolution])))
+    def Beam_Pattern(az, alt, pol, beam, ires=ires):
+        iAz = (np.round(az*ires)).astype(np.int32)
+        iAlt = (np.round(alt*ires)).astype(np.int32)
+
+        return beam[pol, iAz, iAlt] 
+
+    #Generate the beam at each desired frequency and combine it with the sky.
+    spec = np.zeros((2, freqs.size), dtype=np.float64)
+    for j, freq in enumerate(tqdm(freqs)) if verbose else enumerate(freqs):
+        beam = beamformer.beamform(station=station, weights=weights, freq=freq, azimuth=azimuth, 
+                elevation=elevation, resolution=resolution, ant_gain_file=ant_gain_file, verbose=False)
+
+        observer = generate_GSM_observer(station=station, freq=freq, date=date, skymap=skymap)
+
+        sky, mask = observer.observed_sky.data, observer.observed_sky.mask
+        sky = sky[~mask]
+
+        #Equatorial coordinates of each observed HEALPix pixel in degrees.
+        ra, dec = observer._observed_ra[~mask], observer._observed_dec[~mask]
+
+        ra *= (np.pi/180.0)
+        dec *= (np.pi/180.0)
+
+        az, alt = [], []
+        for r,d in zip(ra, dec):
+            b = ephem.FixedBody()
+            b._ra = r
+            b._dec = d
+
+            b.compute(observer)
+            az.append(b.az)
+            alt.append(b.alt)
+
+        az = np.array(az)*(180.0/np.pi)
+        alt = np.array(alt)*(180/np.pi)
+
+        for i in range(spec.shape[0]): 
+            gain = Beam_Pattern(az, alt, pol=i, beam=beam)
+        
+            #Multiply the observed sky by the given beam pattern.
+            beam_T = sky * gain
+
+            #Sum to find total observed power.
+            spec[i,j] = np.sum(beam_T) / gain.sum()
+
+    #Plot the spectrum, if requested.
+    if plot:
+        fig, ax = plt.subplots(1,1)
+        ax.set_title(f'{station.name} Spectrum at {date:%Y/%m/%d %H:%M:%S} UTC for Beam Pointing ({azimuth} deg Az, {elevation} deg El) Using {skymap}', fontsize=14)
+        ax.plot(freqs/1e6, spec[0,:], '-', label='Pol 1')
+        ax.plot(freqs/1e6, spec[1,:], '-', label='Pol 2')
+        ax.set_xlabel('Frequency [MHz]', fontsize=12)
+        ax.set_ylabel('Temperature [K]', fontsize=12)
+        ax.legend(loc=0)
+        ax.tick_params(which='both', direction='in', length=8, labelsize=12)
+
+        plt.show()
+
+    return spec
