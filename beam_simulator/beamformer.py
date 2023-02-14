@@ -7,6 +7,7 @@ import numpy as np
 from numba import jit
 from astropy.constants import c
 from scipy.special import sph_harm
+from scipy.interpolate import interp2d
 
 __version__ = '1.0'
 __authors__ = ['Chris DiLullo', 'Jayce Dowell']
@@ -160,7 +161,7 @@ def _computeBeamformedSignal(freq, az, el, xyz, cbl, t, w, att, pol1, pol2, vLig
 
     return pwr1, pwr2
 
-def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0, ant_gain_file=None, dB=False, verbose=True):
+def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevation=90.0, resolution=1.0, ant_gain_file=None, ant_corr_file=None, dB=False, verbose=True):
     """
     Given a weighting vector and beam_simulator.Station object,
     simulate the beam pattern on the sky for a given frequency
@@ -173,7 +174,8 @@ def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevati
      * azimuth - Azimuth Eastward of North [deg]
      * elevation - Elevation above horizon [deg]
      * resolution - Simulation resolution [deg]
-     * antGainFile - Antenna gain file output by nec.combine_harmonic_fits (.npz)
+     * ant_gain_file - Antenna gain file output by nec.combine_harmonic_fits (.npz)
+     * ant_corr_file - Empirical correction to an antenna gain pattern. This is only designed for the LWA.
      * dB - Convert final simulated power to dB
 
     Returns:
@@ -238,6 +240,18 @@ def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevati
         coeffs1 = beam['coeffs1']
         coeffs2 = beam['coeffs2']
 
+        #If given, load in the empirical correction to the antenna gain pattern.
+        try:
+            correction = np.load(ant_corr_file)
+            corr_freqs, corr_alts, corr = correction['freqs'], correction['alts'], correction['corrs']
+            intp = interp2d(corr_alts, corr_freqs, corr, kind='cubic')
+            corr = intp(el[0,:]*180.0/np.pi, freq/1e6)
+            print('Loaded in empirical correction to the antenna gain pattern')
+        except:
+            corr = np.ones(el.shape[1])
+            print('No empirical correction applied to the antenna gain pattern')
+            pass
+
         #If a beam file has been supplied, see if it uses spherical harmonic decomposition.
         try:
             lmax = beam['lmax']
@@ -258,6 +272,9 @@ def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevati
                         t += 1
 
                 antGain = np.real(gain)
+
+                #Apply the correction and normalize
+                antGain *= corr
                 antGain /= antGain.max()
 
                 #Multiply the power array by the antenna gain pattern. 
@@ -278,8 +295,12 @@ def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevati
                 for j in range(az.shape[0]):
                     for k in range(az.shape[1]):
                         antGain[j,k] = gain[j//ires, k//ires]
-        
+       
+                #Apply the correction and normalize
+                antGain *= corr 
                 antGain /= antGain.max()
+ 
+                #Multiply the power array by the antenna gain pattern. 
                 if i == 0:
                     pwr1 *= antGain
                 else:
