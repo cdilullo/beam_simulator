@@ -180,20 +180,22 @@ def generate_driftcurve(station, beam, freq=60e6, start=None, stop=None, step=30
     return LSTs, drift
 
 
-def generate_spectrum(station, weights, freqs, azimuth=90.0, elevation=90.0, resolution=1.0, ant_gain_file=None, date=None, skymap='GSM2008', verbose=True, plot=False):
+def generate_spectrum(station, freqs, azimuth=90.0, elevation=90.0, resolution=1.0, ant_gain_file=None, ant_corr_file=None, date=None, skymap='GSM2008', custom=False, fwhm=5.0, verbose=True, plot=False):
     """
     Simulate a spectrum across a set of frequencies for a given station beam pointing and time.
 
     Inputs:
      * station - Station obect
-     * weights - weighting array for the station elements
      * freqs - Frequencies in Hz
      * azimuth - Azimuth East of North in degrees
      * elevation - Elevation above the horizon in degrees
      * resolution - Resolution of the beam simulations in degrees
      * ant_gain_file - .npz file which stores the antenna gain pattern fit across frequency
+     * ant_corr_file - .npz file which stores an empirical correction to the antenna gain pattern. Mainly used for the LWA.
      * date - UTC date/time as either a datetime.datetime object or a Unix timestamp
      * skymap - Sky map to use. Valid options are 'GSM2008', 'GSM2016', or 'LFSM'
+     * custom - Use Gaussian weights for custom beamforming
+     * fwhm - FWHM of the custom beam mainlobe. Only used if custom keyword set to True.
      * verbose - Show progress bar
      * plot - Plot the final spectra
     """
@@ -215,8 +217,13 @@ def generate_spectrum(station, weights, freqs, azimuth=90.0, elevation=90.0, res
     #Generate the beam at each desired frequency and combine it with the sky.
     spec = np.zeros((2, freqs.size), dtype=np.float64)
     for j, freq in enumerate(tqdm(freqs)) if verbose else enumerate(freqs):
+        if custom:
+            weights = beamformer.generate_gaussian_weights(station=station, freq=freq, azimuth=azimuth, elevation=elevation, fwhm=fwhm)
+        else:
+            weights = beamformer.generate_uniform_weights(station)
+
         beam = beamformer.beamform(station=station, weights=weights, freq=freq, azimuth=azimuth, 
-                elevation=elevation, resolution=resolution, ant_gain_file=ant_gain_file, verbose=False)
+                elevation=elevation, resolution=resolution, ant_gain_file=ant_gain_file, ant_corr_file=ant_corr_file, verbose=False)
 
         observer = generate_GSM_observer(station=station, freq=freq, date=date, skymap=skymap)
 
