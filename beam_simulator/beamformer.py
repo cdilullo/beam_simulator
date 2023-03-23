@@ -246,10 +246,10 @@ def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevati
             corr_freqs, corr_alts, corr = correction['freqs'], correction['alts'], correction['corrs']
             intp = interp2d(corr_alts, corr_freqs, corr, kind='cubic')
             corr = intp(el[0,:]*180.0/np.pi, freq/1e6)
-            print('Loaded in empirical correction to the antenna gain pattern')
+            if verbose:
+                print('Loaded in empirical correction to the antenna gain pattern')
         except:
             corr = np.ones(el.shape[1])
-            print('No empirical correction applied to the antenna gain pattern')
             pass
 
         #If a beam file has been supplied, see if it uses spherical harmonic decomposition.
@@ -306,7 +306,10 @@ def beamform(station, weights=None, delays=None, freq=60e6, azimuth=0.0, elevati
                 else:
                     pwr2 *= antGain
     except:
-        print('No antenna gain pattern given. The output power array only accounts for the geometry of the array!')
+        if verbose:
+            print('No antenna gain pattern given. The output power array only accounts for the geometry of the array!')
+        else:
+            pass
 
     #Return the beam pattern.
     pwr1 /= pwr1.max()
