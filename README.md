@@ -18,7 +18,7 @@ A template for such text files is provided. LWA SSMIF's are also supported to qu
 
 Requirements
 ------------
-* python >= 3.6
+* python >= 3.8
 * numpy >= 1.19.2
 * scipy >= 1.5.4
 * astropy >= 4.1
