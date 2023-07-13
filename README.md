@@ -11,7 +11,7 @@ This package contains tools for simulating the beam pattern of an arbitray phase
 * nec.py - Tools for reading in an output file from a NEC4 simulation and representing the gain pattern of an individual antenna.
 * station.py - Collection of classes used to build objects representing the different levels of an array.
 * beamformer.py - Beamforming related functions for a given `<Station>` object.
-* driftcurve.py - Collection of functions which can simulate the observed sky for a `<Station>` object and simulate its response.
+* skymap.py - Collection of functions which can simulate the observed sky for a `<Station>` object and simulate the measured spectrum or driftcurve.
 
 Information about a station can be supplied in a text file which can be loaded in to generate a fully populated `<Station>` object.
 A template for such text files is provided. LWA SSMIF's are also supported to quickly load in a full LWA station.
@@ -62,7 +62,7 @@ t1 = [f'lwa1_xet_{freq}.out' for freq in freqs]
 p2 = [f'lwa1_yep_{freq}.out' for freq in freqs]
 t2 = [f'lwa1_yet_{freq}.out' for freq in freqs]
 
-#Fit the spherical harmonic decompisition as a polynomial in frequency.
+#Fit the spherical harmonic decomposition as a polynomial in frequency.
 nec.fit_antenna_response(freqs, p1, t1, p2, t2, lmax=12)  
 ```
 
@@ -77,5 +77,5 @@ w = beamformer.generate_uniform_weights(lwasv) #All antennas have the same weigh
 
 #Simulate the beam for a pointing center of az = 180 deg, el = 75 deg at 74 MHz with 1 degree resolution.
 pwr = beamformer.beamform(lwasv, w, freq=74e6, azimuth=180.0, elevation=75.0, resolution=1.0,
-                          antGainFile='beam_coefficients.npz', dB=False)
+                          ant_gain_file='beam_coefficients.npz', dB=False)
 ```
