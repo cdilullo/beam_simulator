@@ -63,6 +63,7 @@ class AntennaPattern(object):
                 powcurr = float(lines[i+12].split()[8])
                 phscurr = float(lines[i+12].split()[9])
                 self.antenna_pat[phi, theta] = powcurr*np.exp(1j*phscurr*np.pi/180.0)
+        self.antenna_pat[-1, :] = self.antenna_pat[0, :]
 
     def plot_pattern(self, dB=False):
         """
